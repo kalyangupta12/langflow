@@ -2,6 +2,7 @@ import * as Form from "@radix-ui/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { useContext, useState } from "react";
 import LangflowLogo from "@/assets/LangflowLogo.svg?react";
+import OAuthButtons from "@/components/OAuthButtons";
 import { useLoginUser } from "@/controllers/API/queries/auth";
 import { CustomLink } from "@/customization/components/custom-link";
 import { useSanitizeRedirectUrl } from "@/hooks/use-sanitize-redirect-url";
@@ -135,6 +136,7 @@ export default function LoginPage(): JSX.Element {
               </Button>
             </Form.Submit>
           </div>
+          <OAuthButtons className="mt-4" />
           <div className="w-full">
             <CustomLink to="/signup">
               <Button className="w-full" variant="outline" type="button">

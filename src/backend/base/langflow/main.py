@@ -421,6 +421,15 @@ def create_app():
         version=__version__,
         lifespan=lifespan,
     )
+    
+    # Add session middleware for OAuth state management
+    from starlette.middleware.sessions import SessionMiddleware
+    import secrets
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=get_settings_service().auth_settings.SECRET_KEY or secrets.token_urlsafe(32)
+    )
+    
     app.add_middleware(
         ContentSizeLimitMiddleware,
     )

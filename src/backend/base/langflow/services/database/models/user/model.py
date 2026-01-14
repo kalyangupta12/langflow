@@ -49,6 +49,10 @@ class User(SQLModel, table=True):  # type: ignore[call-arg]
     optins: dict[str, Any] | None = Field(
         sa_column=Column(JSON, default=lambda: UserOptin().model_dump(), nullable=True)
     )
+    # OAuth fields
+    oauth_provider: str | None = Field(default=None, nullable=True)  # "google", "phantom", etc.
+    oauth_id: str | None = Field(default=None, nullable=True, index=True)  # Provider-specific user ID
+    wallet_address: str | None = Field(default=None, nullable=True, index=True)  # For Web3 authentication
 
 
 class UserCreate(SQLModel):

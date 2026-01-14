@@ -2,6 +2,7 @@ import * as Form from "@radix-ui/react-form";
 import { type FormEvent, useEffect, useState } from "react";
 import LangflowLogo from "@/assets/LangflowLogo.svg?react";
 import InputComponent from "@/components/core/parameterRenderComponent/components/inputComponent";
+import OAuthButtons from "@/components/OAuthButtons";
 import { useAddUser } from "@/controllers/API/queries/auth";
 import { CustomLink } from "@/customization/components/custom-link";
 import { useCustomNavigate } from "@/customization/hooks/use-custom-navigate";
@@ -190,6 +191,7 @@ export default function SignUp(): JSX.Element {
               </Button>
             </Form.Submit>
           </div>
+          <OAuthButtons className="mt-4" />
           <div className="w-full">
             <CustomLink to="/login">
               <Button className="w-full" variant="outline">

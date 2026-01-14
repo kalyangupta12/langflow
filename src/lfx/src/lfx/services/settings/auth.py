@@ -112,6 +112,12 @@ class AuthSettings(BaseSettings):
     COOKIE_DOMAIN: str | None = None
     """The domain attribute of the cookies. If None, the domain is not set."""
 
+    # OAuth Configuration
+    GOOGLE_CLIENT_ID: str | None = None
+    """Google OAuth Client ID for authentication."""
+    GOOGLE_CLIENT_SECRET: str | None = None
+    """Google OAuth Client Secret for authentication."""
+    
     pwd_context: CryptContext = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     model_config = SettingsConfigDict(validate_assignment=True, extra="ignore", env_prefix="LANGFLOW_")
