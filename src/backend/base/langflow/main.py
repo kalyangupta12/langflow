@@ -427,7 +427,10 @@ def create_app():
     import secrets
     app.add_middleware(
         SessionMiddleware,
-        secret_key=get_settings_service().auth_settings.SECRET_KEY or secrets.token_urlsafe(32)
+        secret_key=get_settings_service().auth_settings.SECRET_KEY or secrets.token_urlsafe(32),
+        max_age=3600,  # 1 hour session
+        same_site="lax",  # Allow OAuth callbacks
+        https_only=False  # Set to True in production with HTTPS
     )
     
     app.add_middleware(

@@ -53,6 +53,7 @@ class User(SQLModel, table=True):  # type: ignore[call-arg]
     oauth_provider: str | None = Field(default=None, nullable=True)  # "google", "phantom", etc.
     oauth_id: str | None = Field(default=None, nullable=True, index=True)  # Provider-specific user ID
     wallet_address: str | None = Field(default=None, nullable=True, index=True)  # For Web3 authentication
+    email: str | None = Field(default=None, nullable=True, index=True)  # User email address
 
 
 class UserCreate(SQLModel):
@@ -74,6 +75,8 @@ class UserRead(SQLModel):
     updated_at: datetime = Field()
     last_login_at: datetime | None = Field(nullable=True)
     optins: dict[str, Any] | None = Field(default=None)
+    oauth_provider: str | None = Field(default=None)
+    email: str | None = Field(default=None)
 
 
 class UserUpdate(SQLModel):

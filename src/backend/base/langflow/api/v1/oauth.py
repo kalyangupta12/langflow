@@ -59,9 +59,20 @@ async def google_oauth_authorize(request: Request):
             }
         )
     
-    # Generate and store state for CSRF protection
-    state = secrets.token_urlsafe(32)
-    request.session["oauth_state"] = state
+    # Generate signed state for CSRF protection (no session storage needed)
+    import time
+    import hmac
+    import hashlib
+    
+    # Get secret key as string (handle SecretStr type)
+    secret_key_value = settings.SECRET_KEY.get_secret_value() if hasattr(settings.SECRET_KEY, 'get_secret_value') else str(settings.SECRET_KEY or "langflow-oauth-secret")
+    timestamp = str(int(time.time()))
+    random_value = secrets.token_urlsafe(16)
+    
+    # Create signed state: timestamp:random:signature
+    message = f"{timestamp}:{random_value}"
+    signature = hmac.new(secret_key_value.encode(), message.encode(), hashlib.sha256).hexdigest()
+    state = f"{timestamp}:{random_value}:{signature}"
     
     google_auth_url = "https://accounts.google.com/o/oauth2/v2/auth"
     redirect_uri = str(request.base_url).rstrip("/") + "/api/v1/oauth/google/callback"
@@ -100,12 +111,37 @@ async def google_oauth_callback(
             detail="Google OAuth is not configured properly.",
         )
     
-    # Verify state to prevent CSRF attacks
-    stored_state = request.session.get("oauth_state")
-    if not stored_state or stored_state != state:
+    # Verify signed state to prevent CSRF attacks
+    import time
+    import hmac
+    import hashlib
+    
+    try:
+        # Parse state: timestamp:random:signature
+        parts = state.split(":")
+        if len(parts) != 3:
+            raise ValueError("Invalid state format")
+        
+        timestamp_str, random_value, received_signature = parts
+        timestamp = int(timestamp_str)
+        
+        # Check if state is not too old (e.g., 10 minutes)
+        current_time = int(time.time())
+        if current_time - timestamp > 600:  # 10 minutes
+            raise ValueError("State token expired")
+        
+        # Verify signature
+        secret_key_value = settings.SECRET_KEY.get_secret_value() if hasattr(settings.SECRET_KEY, 'get_secret_value') else str(settings.SECRET_KEY or "langflow-oauth-secret")
+        message = f"{timestamp_str}:{random_value}"
+        expected_signature = hmac.new(secret_key_value.encode(), message.encode(), hashlib.sha256).hexdigest()
+        
+        if not hmac.compare_digest(expected_signature, received_signature):
+            raise ValueError("Invalid state signature")
+            
+    except (ValueError, TypeError) as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid state parameter. Possible CSRF attack.",
+            detail=f"Invalid state parameter. Possible CSRF attack. Error: {str(e)}",
         )
     
     # Exchange authorization code for access token
@@ -161,6 +197,7 @@ async def google_oauth_callback(
             is_active=True,
             oauth_provider="google",
             oauth_id=google_id,
+            email=email,
         )
         try:
             db.add(new_user)
@@ -188,20 +225,59 @@ async def google_oauth_callback(
     # Generate JWT tokens
     user_tokens = await create_user_tokens(user_id=user.id, db=db, update_last_login=True)
     
-    # Set refresh token cookie
-    response.set_cookie(
+    # Create HTML response that stores tokens and redirects
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Login Success</title>
+        <script>
+            // Store both tokens in localStorage
+            localStorage.setItem('access_token_lf', '{user_tokens["access_token"]}');
+            localStorage.setItem('refresh_token_lf', '{user_tokens["refresh_token"]}');
+            
+            // Also set cookies via JavaScript as backup
+            document.cookie = 'access_token_lf={user_tokens["access_token"]}; path=/; max-age={settings.ACCESS_TOKEN_EXPIRE_SECONDS}; samesite=lax';
+            document.cookie = 'refresh_token_lf={user_tokens["refresh_token"]}; path=/; max-age={settings.REFRESH_TOKEN_EXPIRE_SECONDS}; samesite=lax';
+            
+            // Redirect to home page after a short delay to ensure cookies are set
+            setTimeout(function() {{
+                window.location.href = 'http://127.0.0.1:7860/';
+            }}, 500);
+        </script>
+    </head>
+    <body>
+        <p>Login successful. Redirecting...</p>
+    </body>
+    </html>
+    """
+    
+    # Create response with cookies set via Set-Cookie headers
+    html_response = Response(content=html_content, media_type="text/html")
+    
+    # Set refresh token cookie (HTTP-only for security)
+    html_response.set_cookie(
         "refresh_token_lf",
         user_tokens["refresh_token"],
-        httponly=settings.REFRESH_HTTPONLY,
-        samesite=settings.REFRESH_SAME_SITE,
-        secure=settings.REFRESH_SECURE,
-        expires=settings.REFRESH_TOKEN_EXPIRE_SECONDS,
-        domain=settings.COOKIE_DOMAIN,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        max_age=settings.REFRESH_TOKEN_EXPIRE_SECONDS,
+        path="/",
     )
     
-    # Redirect to frontend with access token
-    frontend_url = f"http://127.0.0.1:7860/?access_token={user_tokens['access_token']}"
-    return RedirectResponse(url=frontend_url)
+    # Set access token cookie (httponly=False so JavaScript can read it)
+    html_response.set_cookie(
+        "access_token_lf",
+        user_tokens["access_token"],
+        httponly=False,
+        samesite="lax",
+        secure=False,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_SECONDS,
+        path="/",
+    )
+    
+    return html_response
 
 
 # ============================================================================
@@ -262,15 +338,26 @@ async def phantom_wallet_verify(
     # Generate JWT tokens
     user_tokens = await create_user_tokens(user_id=user.id, db=db, update_last_login=True)
     
-    # Set refresh token cookie
+    # Set refresh token cookie with proper settings for localhost
     response.set_cookie(
         "refresh_token_lf",
         user_tokens["refresh_token"],
-        httponly=settings.REFRESH_HTTPONLY,
-        samesite=settings.REFRESH_SAME_SITE,
-        secure=settings.REFRESH_SECURE,
-        expires=settings.REFRESH_TOKEN_EXPIRE_SECONDS,
-        domain=settings.COOKIE_DOMAIN,
+        httponly=True,  # Prevent JavaScript access for security
+        samesite="lax",  # Allow cookie to be sent with requests
+        secure=False,  # False for http://127.0.0.1 (use True for HTTPS)
+        max_age=settings.REFRESH_TOKEN_EXPIRE_SECONDS,
+        path="/",  # Make cookie available for all paths
+    )
+    
+    # Set access token cookie (httponly=False so JavaScript can read it)
+    response.set_cookie(
+        "access_token_lf",
+        user_tokens["access_token"],
+        httponly=False,  # Allow JavaScript to read for Authorization headers
+        samesite="lax",
+        secure=False,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_SECONDS,
+        path="/",
     )
     
     # Return tokens

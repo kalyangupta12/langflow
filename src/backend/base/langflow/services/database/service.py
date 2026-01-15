@@ -180,9 +180,13 @@ class DatabaseService(Service):
                 "check_same_thread": False,
                 "timeout": settings.db_connect_timeout,
             }
-        # For PostgreSQL, set the timezone to UTC
+        # For PostgreSQL with asyncpg, use server_settings instead of options
         if settings.database_url and settings.database_url.startswith(("postgresql", "postgres")):
-            return {"options": "-c timezone=utc"}
+            # asyncpg doesn't support 'options' parameter, use server_settings instead
+            if "asyncpg" in settings.database_url:
+                return {"server_settings": {"timezone": "utc"}}
+            else:
+                return {"options": "-c timezone=utc"}
         return {}
 
     def on_connection(self, dbapi_connection, _connection_record) -> None:

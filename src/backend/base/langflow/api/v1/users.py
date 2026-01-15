@@ -148,3 +148,27 @@ async def delete_user(
 
     await session.delete(user_db)
     return {"detail": "User deleted"}
+
+
+@router.get("/check-username/{username}")
+async def check_username_availability(
+    username: str,
+    session: DbSession,
+    current_user: CurrentActiveUser,
+) -> dict:
+    """Check if a username is available.
+    
+    Returns:
+        dict: {"available": bool, "username": str}
+    """
+    # Check if username exists (excluding current user)
+    stmt = select(User).where(
+        User.username == username,
+        User.id != current_user.id
+    )
+    existing_user = (await session.exec(stmt)).first()
+    
+    return {
+        "available": existing_user is None,
+        "username": username,
+    }

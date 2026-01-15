@@ -28,6 +28,7 @@ import useScrollToElement from "../hooks/use-scroll-to-element";
 import GeneralPageHeaderComponent from "./components/GeneralPageHeader";
 import PasswordFormComponent from "./components/PasswordForm";
 import ProfilePictureFormComponent from "./components/ProfilePictureForm";
+import UserProfileForm from "./components/UserProfileForm";
 
 export const GeneralPage = () => {
   const { scrollId } = useParams();
@@ -142,6 +143,9 @@ export const GeneralPage = () => {
       <GeneralPageHeaderComponent />
 
       <div className="flex w-full flex-col gap-6">
+        {/* User Profile Information */}
+        <UserProfileForm userData={userData} setUserData={setUserData} />
+
         {ENABLE_PROFILE_ICONS && (
           <ProfilePictureFormComponent
             profilePicture={profilePicture}

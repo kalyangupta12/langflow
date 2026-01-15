@@ -141,28 +141,51 @@ async def refresh_token(
     auth_settings = get_settings_service().auth_settings
 
     token = request.cookies.get("refresh_token_lf")
+    
+    # Debug logging
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.warning(f"=== REFRESH DEBUG ===")
+    logger.warning(f"Cookie present: {token is not None}")
+    if token:
+        logger.warning(f"Token length: {len(token)}")
+        logger.warning(f"Token starts with: {token[:20] if len(token) > 20 else token}")
+    logger.warning(f"All cookies: {list(request.cookies.keys())}")
+    logger.warning(f"Request headers: {dict(request.headers)}")
+    logger.warning(f"==================")
 
     if token:
-        tokens = await create_refresh_token(token, db)
-        response.set_cookie(
-            "refresh_token_lf",
-            tokens["refresh_token"],
-            httponly=auth_settings.REFRESH_HTTPONLY,
-            samesite=auth_settings.REFRESH_SAME_SITE,
-            secure=auth_settings.REFRESH_SECURE,
-            expires=auth_settings.REFRESH_TOKEN_EXPIRE_SECONDS,
-            domain=auth_settings.COOKIE_DOMAIN,
-        )
-        response.set_cookie(
-            "access_token_lf",
-            tokens["access_token"],
-            httponly=auth_settings.ACCESS_HTTPONLY,
-            samesite=auth_settings.ACCESS_SAME_SITE,
-            secure=auth_settings.ACCESS_SECURE,
-            expires=auth_settings.ACCESS_TOKEN_EXPIRE_SECONDS,
-            domain=auth_settings.COOKIE_DOMAIN,
-        )
-        return tokens
+        try:
+            tokens = await create_refresh_token(token, db)
+            # Use consistent cookie settings for localhost
+            response.set_cookie(
+                "refresh_token_lf",
+                tokens["refresh_token"],
+                httponly=True,  # Keep refresh token secure
+                samesite="lax",
+                secure=False,
+                max_age=auth_settings.REFRESH_TOKEN_EXPIRE_SECONDS,
+                path="/",
+            )
+            response.set_cookie(
+                "access_token_lf",
+                tokens["access_token"],
+                httponly=False,  # Allow JavaScript to read for Authorization headers
+                samesite="lax",
+                secure=False,
+                max_age=auth_settings.ACCESS_TOKEN_EXPIRE_SECONDS,
+                path="/",
+            )
+            logger.warning("Refresh successful - new tokens generated")
+            return tokens
+        except Exception as e:
+            logger.error(f"Token validation failed: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Invalid refresh token: {str(e)}",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    logger.warning("No refresh token cookie found")
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid refresh token",
