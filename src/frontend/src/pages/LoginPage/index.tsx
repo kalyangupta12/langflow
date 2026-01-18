@@ -2,6 +2,7 @@ import * as Form from "@radix-ui/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { useContext, useState } from "react";
 import LangflowLogo from "@/assets/LangflowLogo.svg?react";
+import AgentsTrail from "@/assets/AgentsTrail.svg?react";
 import OAuthButtons from "@/components/OAuthButtons";
 import { useLoginUser } from "@/controllers/API/queries/auth";
 import { CustomLink } from "@/customization/components/custom-link";
@@ -75,10 +76,7 @@ export default function LoginPage(): JSX.Element {
     >
       <div className="flex h-full w-full flex-col items-center justify-center bg-muted">
         <div className="flex w-72 flex-col items-center justify-center gap-2">
-          <LangflowLogo
-            title="Langflow logo"
-            className="mb-4 h-10 w-10 scale-[1.5]"
-          />
+          <AgentsTrail title="AgentsTrail logo" className="h-14 w-14 scale-[1.5]" />
           <span className="mb-6 text-2xl font-semibold text-primary">
             Sign in to AgentsTrail
           </span>

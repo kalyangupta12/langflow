@@ -47,10 +47,13 @@ export default function GlobalVariablesPage() {
   // Column Definitions: Defines the columns to be displayed.
   const colDefs: ColDef[] = [
     {
-      headerName: "Variable Name",
+      headerName: "Variable",
       field: "name",
-      flex: 2,
-    }, //This column will be twice as wide as the others
+      flex: 3,
+      minWidth: 200,
+      checkboxSelection: true,
+      headerCheckboxSelection: true,
+    },
     {
       headerName: "Type",
       field: "type",
@@ -59,10 +62,14 @@ export default function GlobalVariablesPage() {
       cellEditorParams: {
         options: ["Generic", "Credential"],
       },
-      flex: 1,
+      flex: 2,
+      minWidth: 120,
     },
     {
+      headerName: "Value",
       field: "value",
+      flex: 3,
+      minWidth: 150,
       valueFormatter: (params: ValueFormatterParams<GlobalVariable>) => {
         const isCreditential = params.data?.type === "Credential";
 
@@ -78,8 +85,9 @@ export default function GlobalVariablesPage() {
       valueFormatter: (params) => {
         return params.value?.join(", ") ?? "";
       },
-      flex: 1,
-      resizable: false,
+      flex: 2,
+      minWidth: 150,
+      resizable: true,
     },
   ];
 
@@ -111,7 +119,7 @@ export default function GlobalVariablesPage() {
   }
 
   return (
-    <div className="flex h-full w-full flex-col justify-between gap-6">
+    <div className="flex w-full flex-col gap-6 ">
       <div className="flex w-full items-start justify-between gap-6">
         <div className="flex w-full flex-col">
           <h2
@@ -138,7 +146,7 @@ export default function GlobalVariablesPage() {
         </div>
       </div>
 
-      <div className="flex h-full w-full flex-col justify-between">
+<div className="flex w-full h-[500px] overflow-hidden">
         <TableComponent
           key={"globalVariables"}
           overlayNoRowsTemplate="No data available"

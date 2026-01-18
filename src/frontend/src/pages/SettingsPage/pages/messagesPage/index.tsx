@@ -6,7 +6,7 @@ export default function MessagesPage() {
   useGetMessagesQuery({ mode: "union" });
 
   return (
-    <div className="flex h-full w-full flex-col justify-between gap-6">
+    <div className="flex h-full w-full flex-col justify-between gap-6 p-6 mx-auto max-w-7xl">
       <HeaderMessagesComponent />
       <div className="flex h-full w-full flex-col justify-between">
         <SessionView />

@@ -38,6 +38,8 @@ import ModelProvidersPage from "./pages/SettingsPage/pages/ModelProvidersPage";
 import MessagesPage from "./pages/SettingsPage/pages/messagesPage";
 import ShortcutsPage from "./pages/SettingsPage/pages/ShortcutsPage";
 import ViewPage from "./pages/ViewPage";
+import DashboardPage from "./pages/DashboardPage";
+import ModernSettingsPage from "./pages/ModernSettingsPage";
 
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const LoginAdminPage = lazy(() => import("./pages/AdminPage/LoginPage"));
@@ -80,16 +82,38 @@ const router = createBrowserRouter(
             <Route path="" element={<AppAuthenticatedPage />}>
               <Route path="" element={<CustomDashboardWrapperPage />}>
                 <Route path="" element={<CollectionPage />}>
-                  {/* Redirect root to workflows */}
+                  {/* Redirect root to dashboard */}
                   <Route
                     index
-                    element={<CustomNavigate replace to={"workflows"} />}
+                    element={<CustomNavigate replace to={"dashboard"} />}
                   />
+                  {/* Dashboard */}
+                  <Route path="dashboard" element={<DashboardPage />} />
                   {/* Main workflows page - replaces /flows and /all */}
                   <Route
                     path="workflows/"
                     element={<HomePage key="workflows" type="workflows" />}
                   />
+                  {/* MCP Servers - moved from settings */}
+                  <Route path="mcp-servers" element={<MCPServersPage />} />
+                  {/* Model Providers - moved from settings */}
+                  <Route path="model-providers" element={<ModelProvidersPage />} />
+                  {/* Shortcuts - moved from settings */}
+                  <Route path="shortcuts" element={<ShortcutsPage />} />
+                  {/* Messages - moved from settings */}
+                  <Route path="messages" element={<MessagesPage />} />
+                  {/* General Settings - modern tabbed page with global variables */}
+                  <Route path="general-settings/:scrollId?" element={
+                    <AuthSettingsGuard>
+                      <ModernSettingsPage />
+                    </AuthSettingsGuard>
+                  } />
+                  {/* API Keys - moved from settings */}
+                  <Route path="api-keys" element={
+                    <div className="flex h-full w-full flex-col gap-6 p-6 mx-auto max-w-7xl">
+                      <ApiKeysPage />
+                    </div>
+                  } />
                   {ENABLE_FILE_MANAGEMENT && (
                     <Route path="assets">
                       <Route
@@ -125,12 +149,6 @@ const router = createBrowserRouter(
                     path="global-variables"
                     element={<GlobalVariablesPage />}
                   />
-                  <Route
-                    path="model-providers"
-                    element={<ModelProvidersPage />}
-                  />
-                  <Route path="mcp-servers" element={<MCPServersPage />} />
-
                   <Route path="api-keys" element={<ApiKeysPage />} />
                   <Route
                     path="general/:scrollId?"
@@ -140,8 +158,6 @@ const router = createBrowserRouter(
                       </AuthSettingsGuard>
                     }
                   />
-                  <Route path="shortcuts" element={<ShortcutsPage />} />
-                  <Route path="messages" element={<MessagesPage />} />
                   {CustomRoutesStore()}
                 </Route>
                 {CustomRoutesStorePages()}

@@ -277,6 +277,15 @@ def get_lifespan(*, fix_migration=False, version=None):
                 queue_service.start()
             await logger.adebug(f"Flows loaded in {asyncio.get_event_loop().time() - current_time:.2f}s")
 
+            # Initialize scheduler service for workflow schedules
+            current_time = asyncio.get_event_loop().time()
+            await logger.adebug("Loading workflow schedules")
+            from langflow.services.scheduler import get_scheduler_service
+
+            scheduler_service = get_scheduler_service()
+            await scheduler_service.load_all_schedules()
+            await logger.adebug(f"Schedules loaded in {asyncio.get_event_loop().time() - current_time:.2f}s")
+
             total_time = asyncio.get_event_loop().time() - start_time
             await logger.adebug(f"Total initialization time: {total_time:.2f}s")
 
@@ -376,6 +385,16 @@ def get_lifespan(*, fix_migration=False, version=None):
 
                 # Step 2: Cleaning Up Services
                 with shutdown_progress.step(2):
+                    # Shutdown scheduler service
+                    try:
+                        from langflow.services.scheduler import get_scheduler_service
+
+                        scheduler_service = get_scheduler_service()
+                        scheduler_service.shutdown()
+                        await logger.adebug("Scheduler service stopped")
+                    except Exception as e:  # noqa: BLE001
+                        await logger.aerror(f"Failed to stop scheduler service: {e}")
+                    
                     try:
                         await asyncio.wait_for(teardown_services(), timeout=30)
                     except asyncio.TimeoutError:

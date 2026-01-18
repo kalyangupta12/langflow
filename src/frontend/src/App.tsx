@@ -20,35 +20,39 @@ export default function App() {
 
   // Handle OAuth login - check for token in cookies or localStorage
   useEffect(() => {
-    // First priority: Check localStorage (OAuth callback stores tokens there)
-    const storedAccessToken = localStorage.getItem('access_token_lf');
-    const storedRefreshToken = localStorage.getItem('refresh_token_lf');
-    
-    if (storedAccessToken && storedRefreshToken) {
-      // Found tokens in localStorage from OAuth callback
-      // Set them as cookies so they'll be sent with future requests
-      document.cookie = `access_token_lf=${storedAccessToken}; path=/; max-age=86400; samesite=lax`;
-      document.cookie = `refresh_token_lf=${storedRefreshToken}; path=/; max-age=604800; samesite=lax`;
+    try {
+      // First priority: Check localStorage (OAuth callback stores tokens there)
+      const storedAccessToken = localStorage.getItem('access_token_lf');
+      const storedRefreshToken = localStorage.getItem('refresh_token_lf');
       
-      // Initialize auth with the access token
-      login(storedAccessToken, "false");
+      if (storedAccessToken && storedRefreshToken) {
+        // Found tokens in localStorage from OAuth callback
+        // Set them as cookies so they'll be sent with future requests
+        document.cookie = `access_token_lf=${storedAccessToken}; path=/; max-age=86400; samesite=lax`;
+        document.cookie = `refresh_token_lf=${storedRefreshToken}; path=/; max-age=604800; samesite=lax`;
+        
+        // Initialize auth with the access token
+        login(storedAccessToken, "false");
+        
+        // Clean up localStorage after copying to cookies
+        localStorage.removeItem('access_token_lf');
+        localStorage.removeItem('refresh_token_lf');
+        
+        return;
+      }
       
-      // Clean up localStorage after copying to cookies
-      localStorage.removeItem('access_token_lf');
-      localStorage.removeItem('refresh_token_lf');
+      // Second priority: Check cookies (for returning users)
+      const accessToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('access_token_lf='))
+        ?.split('=')[1];
       
-      return;
-    }
-    
-    // Second priority: Check cookies (for returning users)
-    const accessToken = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('access_token_lf='))
-      ?.split('=')[1];
-    
-    if (accessToken) {
-      // Initialize auth with the token from cookies
-      login(accessToken, "false");
+      if (accessToken) {
+        // Initialize auth with the token from cookies
+        login(accessToken, "false");
+      }
+    } catch (error) {
+      console.error("Error during OAuth token handling:", error);
     }
   }, [login]);
 

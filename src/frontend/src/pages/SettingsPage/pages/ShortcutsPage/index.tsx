@@ -56,7 +56,7 @@ export default function ShortcutsPage() {
   }
 
   return (
-    <div className="flex h-full w-full flex-col gap-6">
+    <div className="flex h-full w-full flex-col gap-6 p-6 mx-auto max-w-7xl">
       <div className="flex w-full items-start justify-between gap-6">
         <div className="flex w-full flex-col">
           <h2

@@ -23,14 +23,14 @@ export default function OAuthButtons({ className }: OAuthButtonsProps) {
       // Get authorization URL from backend
       const response = await fetch("/api/v1/oauth/google/authorize");
       
-      if (!response.ok) {
-        const errorData = await response.json();
+      if (!response || !response.ok) {
+        const errorData = response ? await response.json() : { detail: "No response from server" };
         throw new Error(errorData.detail || "Google OAuth is not configured");
       }
       
       const data = await response.json();
       
-      if (data.authorization_url) {
+      if (data && data.authorization_url) {
         // Redirect to Google OAuth consent screen
         window.location.href = data.authorization_url;
       } else {

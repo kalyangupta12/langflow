@@ -39,52 +39,11 @@ export default function SettingsPage(): JSX.Element {
 
   sidebarNavItems.push(
     {
-      title: "MCP Servers",
-      href: "/settings/mcp-servers",
-      icon: (
-        <ForwardedIconComponent
-          name="Mcp"
-          className="w-4 flex-shrink-0 justify-start stroke-[1.5]"
-        />
-      ),
-    },
-    {
       title: "Global Variables",
       href: "/settings/global-variables",
       icon: (
         <ForwardedIconComponent
           name="Globe"
-          className="w-4 flex-shrink-0 justify-start stroke-[1.5]"
-        />
-      ),
-    },
-    {
-      title: "Model Providers",
-      href: "/settings/model-providers",
-      icon: (
-        <ForwardedIconComponent
-          name="Brain"
-          className="w-4 flex-shrink-0 justify-start stroke-[1.5]"
-        />
-      ),
-    },
-
-    {
-      title: "Shortcuts",
-      href: "/settings/shortcuts",
-      icon: (
-        <ForwardedIconComponent
-          name="Keyboard"
-          className="w-4 flex-shrink-0 justify-start stroke-[1.5]"
-        />
-      ),
-    },
-    {
-      title: "Messages",
-      href: "/settings/messages",
-      icon: (
-        <ForwardedIconComponent
-          name="MessagesSquare"
           className="w-4 flex-shrink-0 justify-start stroke-[1.5]"
         />
       ),

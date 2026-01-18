@@ -1,7 +1,5 @@
-import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import ForwardedIconComponent from "@/components/common/genericIconComponent";
-import ShadTooltip from "@/components/common/shadTooltipComponent";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
@@ -11,53 +9,12 @@ import {
 } from "@/components/ui/sidebar";
 import { ENABLE_KNOWLEDGE_BASES } from "@/customization/feature-flags";
 import { useCustomNavigate } from "@/customization/hooks/use-custom-navigate";
-import { createFileUpload } from "@/helpers/create-file-upload";
-import { getObjectsFromFilelist } from "@/helpers/get-objects-from-filelist";
-import useUploadFlow from "@/hooks/flows/use-upload-flow";
-import useAlertStore from "@/stores/alertStore";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function WorkflowSidebar() {
   const location = useLocation();
   const navigate = useCustomNavigate();
-  const uploadFlow = useUploadFlow();
-  const setSuccessData = useAlertStore((state) => state.setSuccessData);
-  const setErrorData = useAlertStore((state) => state.setErrorData);
   const isMobile = useIsMobile({ maxWidth: 1024 });
-  const [isUploading, setIsUploading] = useState(false);
-
-  const handleUploadWorkflow = async () => {
-    try {
-      setIsUploading(true);
-      const files: File[] = await createFileUpload();
-      
-      if (files?.length === 0) {
-        setIsUploading(false);
-        return;
-      }
-
-      const objects = await getObjectsFromFilelist<any>(files);
-      
-      if (objects.every((flow) => flow.data?.nodes)) {
-        await uploadFlow({ files });
-        setSuccessData({
-          title: "Workflow uploaded successfully",
-        });
-      } else {
-        setErrorData({
-          title: "Invalid workflow file",
-          list: ["Please upload a valid Langflow workflow file"],
-        });
-      }
-    } catch (error) {
-      setErrorData({
-        title: "Upload failed",
-        list: [error instanceof Error ? error.message : "An error occurred"],
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
 
   const handleFilesNavigation = () => {
     navigate("/assets/files");
@@ -67,8 +24,16 @@ export default function WorkflowSidebar() {
     navigate("/assets/knowledge-bases");
   };
 
+  const isDashboardActive = location.pathname === "/" || location.pathname === "/dashboard";
+  const isWorkflowsActive = location.pathname.includes("/workflows");
+  const isMCPActive = location.pathname.includes("/mcp-servers");
+  const isModelProvidersActive = location.pathname.includes("/model-providers");
+  const isShortcutsActive = location.pathname.includes("/shortcuts");
+  const isMessagesActive = location.pathname.includes("/messages");
   const isFilesActive = location.pathname.includes("/assets/files");
   const isKnowledgeActive = location.pathname.includes("/assets/knowledge-bases");
+  const isGeneralSettingsActive = location.pathname.includes("/general-settings");
+  const isApiKeysActive = location.pathname === "/api-keys";
 
   return (
     <Sidebar
@@ -84,23 +49,82 @@ export default function WorkflowSidebar() {
 
       <SidebarContent className="p-2">
         <div className="space-y-1">
-          <ShadTooltip content="Upload workflow from file" side="right">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2"
-              onClick={handleUploadWorkflow}
-              disabled={isUploading}
-              data-testid="upload-workflow-button"
-            >
-              <ForwardedIconComponent 
-                name={isUploading ? "Loader2" : "Upload"} 
-                className={`h-4 w-4 ${isUploading ? "animate-spin" : ""}`}
-              />
-              <span>Upload Workflow</span>
-            </Button>
-            
-          </ShadTooltip>
-          
+          {/* Dashboard */}
+          <Button
+            variant={isDashboardActive ? "secondary" : "ghost"}
+            className="w-full justify-start gap-2"
+            onClick={() => navigate("/dashboard")}
+            data-testid="dashboard-nav-button"
+          >
+            <ForwardedIconComponent name="LayoutDashboard" className="h-4 w-4" />
+            <span>Dashboard</span>
+          </Button>
+
+          {/* Workflows */}
+          <Button
+            variant={isWorkflowsActive ? "secondary" : "ghost"}
+            className="w-full justify-start gap-2"
+            onClick={() => navigate("/workflows")}
+            data-testid="workflows-nav-button"
+          >
+            <ForwardedIconComponent name="Workflow" className="h-4 w-4" />
+            <span>Workflows</span>
+          </Button>
+
+          {/* MCP Servers */}
+          <Button
+            variant={isMCPActive ? "secondary" : "ghost"}
+            className="w-full justify-start gap-2"
+            onClick={() => navigate("/mcp-servers")}
+            data-testid="mcp-servers-nav-button"
+          >
+            <ForwardedIconComponent name="Mcp" className="h-4 w-4" />
+            <span>MCP Servers</span>
+          </Button>
+
+          {/* Model Providers */}
+          <Button
+            variant={isModelProvidersActive ? "secondary" : "ghost"}
+            className="w-full justify-start gap-2"
+            onClick={() => navigate("/model-providers")}
+            data-testid="model-providers-nav-button"
+          >
+            <ForwardedIconComponent name="Brain" className="h-4 w-4" />
+            <span>Model Providers</span>
+          </Button>
+
+          {/* Training */}
+          <Button
+            variant={isFilesActive ? "secondary" : "ghost"}
+            className="w-full justify-start gap-2"
+            onClick={handleFilesNavigation}
+            data-testid="training-nav-button"
+          >
+            <ForwardedIconComponent name="File" className="h-4 w-4" />
+            <span>Training Data</span>
+          </Button>
+
+          {/* Shortcuts */}
+          <Button
+            variant={isShortcutsActive ? "secondary" : "ghost"}
+            className="w-full justify-start gap-2"
+            onClick={() => navigate("/shortcuts")}
+            data-testid="shortcuts-nav-button"
+          >
+            <ForwardedIconComponent name="Keyboard" className="h-4 w-4" />
+            <span>Shortcuts</span>
+          </Button>
+
+          {/* Messages */}
+          <Button
+            variant={isMessagesActive ? "secondary" : "ghost"}
+            className="w-full justify-start gap-2"
+            onClick={() => navigate("/messages")}
+            data-testid="messages-nav-button"
+          >
+            <ForwardedIconComponent name="MessagesSquare" className="h-4 w-4" />
+            <span>Messages</span>
+          </Button>
         </div>
       </SidebarContent>
 
@@ -117,16 +141,27 @@ export default function WorkflowSidebar() {
               <span>Knowledge</span>
             </Button>
           )}
-          
+
           <Button
-            variant={isFilesActive ? "secondary" : "ghost"}
+            variant={isApiKeysActive ? "secondary" : "ghost"}
             className="w-full justify-start gap-2"
-            onClick={handleFilesNavigation}
-            data-testid="my-files-nav-button"
+            onClick={() => navigate("/api-keys")}
+            data-testid="api-keys-nav-button"
           >
-            <ForwardedIconComponent name="File" className="h-4 w-4" />
-            <span>My Files</span>
+            <ForwardedIconComponent name="Key" className="h-4 w-4" />
+            <span>API Keys</span>
           </Button>
+
+          <Button
+            variant={isGeneralSettingsActive ? "secondary" : "ghost"}
+            className="w-full justify-start gap-2"
+            onClick={() => navigate("/general-settings")}
+            data-testid="settings-nav-button"
+          >
+            <ForwardedIconComponent name="Settings" className="h-4 w-4" />
+            <span>Settings</span>
+          </Button>
+          
         </div>
       </SidebarFooter>
     </Sidebar>

@@ -139,7 +139,7 @@ export const GeneralPage = () => {
   }
 
   return (
-    <div className="flex h-full w-full flex-col gap-6 overflow-x-hidden">
+    <div className="flex w-full flex-col gap-6">
       <GeneralPageHeaderComponent />
 
       <div className="flex w-full flex-col gap-6">

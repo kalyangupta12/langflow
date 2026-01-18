@@ -4,10 +4,13 @@ import ForwardedIconComponent from "@/components/common/genericIconComponent";
 import ShadTooltip from "@/components/common/shadTooltipComponent";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { createFileUpload } from "@/helpers/create-file-upload";
+import { getObjectsFromFilelist } from "@/helpers/get-objects-from-filelist";
 
 import { useDeleteDeleteFlows } from "@/controllers/API/queries/flows/use-delete-delete-flows";
 import { useGetDownloadFlows } from "@/controllers/API/queries/flows/use-get-download-flows";
 import { ENABLE_MCP } from "@/customization/feature-flags";
+import useUploadFlow from "@/hooks/flows/use-upload-flow";
 import DeleteConfirmationModal from "@/modals/deleteConfirmationModal";
 import useAlertStore from "@/stores/alertStore";
 import { cn } from "@/utils/utils";
@@ -38,6 +41,42 @@ const HeaderComponent = ({
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const isMCPEnabled = ENABLE_MCP;
   const setSuccessData = useAlertStore((state) => state.setSuccessData);
+  const setErrorData = useAlertStore((state) => state.setErrorData);
+  const uploadFlow = useUploadFlow();
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleUploadWorkflow = async () => {
+    try {
+      setIsUploading(true);
+      const files: File[] = await createFileUpload();
+      
+      if (files?.length === 0) {
+        setIsUploading(false);
+        return;
+      }
+
+      const objects = await getObjectsFromFilelist<any>(files);
+      
+      if (objects.every((flow) => flow.data?.nodes)) {
+        await uploadFlow({ files });
+        setSuccessData({
+          title: "Workflow uploaded successfully",
+        });
+      } else {
+        setErrorData({
+          title: "Invalid workflow file",
+          list: ["Please upload a valid Langflow workflow file"],
+        });
+      }
+    } catch (error) {
+      setErrorData({
+        title: "Upload failed",
+        list: [error instanceof Error ? error.message : "An error occurred"],
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
   // Debounce the setSearch function from the parent
   const debouncedSetSearch = useCallback(
     debounce((value: string) => {
@@ -216,6 +255,25 @@ const HeaderComponent = ({
                     </Button>
                   </DeleteConfirmationModal>
                 </div>
+                <ShadTooltip content="Upload Workflow" side="bottom">
+                  <Button
+                    variant="outline"
+                    size="iconMd"
+                    className="z-50 px-2.5 !text-mmd mr-2"
+                    onClick={handleUploadWorkflow}
+                    disabled={isUploading}
+                    data-testid="upload-workflow-btn"
+                  >
+                    <ForwardedIconComponent
+                      name={isUploading ? "Loader2" : "Upload"}
+                      aria-hidden="true"
+                      className={`h-4 w-4 ${isUploading ? "animate-spin" : ""}`}
+                    />
+                    <span className="hidden whitespace-nowrap font-semibold md:inline">
+                      Upload Workflow
+                    </span>
+                  </Button>
+                </ShadTooltip>
                 <ShadTooltip content="Create Workflow" side="bottom">
                   <Button
                     variant="default"

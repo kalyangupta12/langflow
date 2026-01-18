@@ -19,6 +19,7 @@ from langflow.api.v1 import (
     oauth_router,
     openai_responses_router,
     projects_router,
+    schedules_router,
     starter_projects_router,
     store_router,
     users_router,
@@ -61,6 +62,7 @@ router_v1.include_router(openai_responses_router)
 router_v1.include_router(models_router)
 router_v1.include_router(model_options_router)
 router_v1.include_router(oauth_router)
+router_v1.include_router(schedules_router)
 
 # Agentic flow execution
 router_v1.include_router(agentic_router)
