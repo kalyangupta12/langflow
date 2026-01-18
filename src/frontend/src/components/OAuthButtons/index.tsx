@@ -21,10 +21,17 @@ export default function OAuthButtons({ className }: OAuthButtonsProps) {
     setIsGoogleLoading(true);
     try {
       // Get authorization URL from backend
-      const response = await fetch("/api/v1/oauth/google/authorize");
+      const response = await fetch("/api/v1/oauth/google/authorize").catch(err => {
+        throw new Error("Cannot connect to server. Please check if backend is running.");
+      });
       
-      if (!response || !response.ok) {
-        const errorData = response ? await response.json() : { detail: "No response from server" };
+      if (!response.ok) {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { detail: "Google OAuth is not configured" };
+        }
         throw new Error(errorData.detail || "Google OAuth is not configured");
       }
       
@@ -77,7 +84,14 @@ export default function OAuthButtons({ className }: OAuthButtonsProps) {
       const publicKey = resp.publicKey.toString();
 
       // Get message to sign from backend
-      const messageResponse = await fetch("/api/v1/oauth/phantom/message");
+      const messageResponse = await fetch("/api/v1/oauth/phantom/message").catch(err => {
+        throw new Error("Cannot connect to server. Please check if backend is running.");
+      });
+      
+      if (!messageResponse.ok) {
+        throw new Error("Failed to get signature message from server");
+      }
+      
       const { message, nonce } = await messageResponse.json();
 
       // Encode message
@@ -97,10 +111,19 @@ export default function OAuthButtons({ className }: OAuthButtonsProps) {
           signature: Array.from(signedMessage.signature),
           message: message,
         }),
+      }).catch(err => {
+        throw new Error("Cannot connect to server. Please check if backend is running.");
       });
 
       if (!verifyResponse.ok) {
-        throw new Error("Failed to verify wallet signature");
+        let errorDetail;
+        try {
+          const errorData = await verifyResponse.json();
+          errorDetail = errorData.detail || "Failed to verify wallet signature";
+        } catch {
+          errorDetail = "Failed to verify wallet signature";
+        }
+        throw new Error(errorDetail);
       }
 
       const tokens = await verifyResponse.json();

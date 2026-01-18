@@ -28,6 +28,7 @@ const api: AxiosInstance = axios.create({
 });
 function ApiInterceptor() {
   const autoLogin = useAuthStore((state) => state.autoLogin);
+  const isLoggingOut = useAuthStore((state) => state.isLoggingOut);
   const setErrorData = useAlertStore((state) => state.setErrorData);
   const accessToken = useAuthStore((state) => state.accessToken);
   const authenticationErrorCount = useAuthStore(
@@ -71,6 +72,11 @@ function ApiInterceptor() {
         return response;
       },
       async (error: AxiosError) => {
+        // Don't try to refresh tokens if user is logging out
+        if (isLoggingOut) {
+          return Promise.reject(error);
+        }
+        
         const isAuthenticationError =
           error?.response?.status === 403 || error?.response?.status === 401;
 

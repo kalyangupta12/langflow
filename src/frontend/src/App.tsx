@@ -1,5 +1,5 @@
 import "@xyflow/react/dist/style.css";
-import { Suspense, useContext, useEffect } from "react";
+import { Suspense, useContext, useEffect, useRef } from "react";
 import { RouterProvider } from "react-router-dom";
 import { AuthContext } from "./contexts/authContext";
 import { LoadingPage } from "./pages/LoadingPage";
@@ -8,7 +8,8 @@ import { useDarkStore } from "./stores/darkStore";
 import { HeaderButtons } from "./components/core/folderSidebarComponent/components/sideBarFolderButtons/components/header-buttons";
 export default function App() {
   const dark = useDarkStore((state) => state.dark);
-  const { login } = useContext(AuthContext);
+  const { login, isAuthenticated } = useContext(AuthContext);
+  const hasInitialized = useRef(false);
   
   useEffect(() => {
     if (!dark) {
@@ -19,7 +20,19 @@ export default function App() {
   }, [dark]);
 
   // Handle OAuth login - check for token in cookies or localStorage
+  // Only run ONCE on initial mount
   useEffect(() => {
+    // Prevent multiple initializations
+    if (hasInitialized.current) {
+      return;
+    }
+    
+    // Don't auto-login if already authenticated
+    if (isAuthenticated) {
+      hasInitialized.current = true;
+      return;
+    }
+    
     try {
       // First priority: Check localStorage (OAuth callback stores tokens there)
       const storedAccessToken = localStorage.getItem('access_token_lf');
@@ -38,6 +51,7 @@ export default function App() {
         localStorage.removeItem('access_token_lf');
         localStorage.removeItem('refresh_token_lf');
         
+        hasInitialized.current = true;
         return;
       }
       
@@ -51,10 +65,13 @@ export default function App() {
         // Initialize auth with the token from cookies
         login(accessToken, "false");
       }
+      
+      hasInitialized.current = true;
     } catch (error) {
       console.error("Error during OAuth token handling:", error);
+      hasInitialized.current = true;
     }
-  }, [login]);
+  }, []); // Empty dependency array - only run once on mount
 
   return (
     <Suspense fallback={<LoadingPage />}>

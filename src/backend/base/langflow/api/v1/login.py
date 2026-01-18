@@ -195,27 +195,30 @@ async def refresh_token(
 
 @router.post("/logout")
 async def logout(response: Response):
-    auth_settings = get_settings_service().auth_settings
-
+    # Delete cookies with matching attributes to how they were set in OAuth
+    # httponly=False, samesite=lax, secure=False, path=/
     response.delete_cookie(
         "refresh_token_lf",
-        httponly=auth_settings.REFRESH_HTTPONLY,
-        samesite=auth_settings.REFRESH_SAME_SITE,
-        secure=auth_settings.REFRESH_SECURE,
-        domain=auth_settings.COOKIE_DOMAIN,
+        httponly=False,
+        samesite="lax",
+        secure=False,
+        path="/",
     )
     response.delete_cookie(
         "access_token_lf",
-        httponly=auth_settings.ACCESS_HTTPONLY,
-        samesite=auth_settings.ACCESS_SAME_SITE,
-        secure=auth_settings.ACCESS_SECURE,
-        domain=auth_settings.COOKIE_DOMAIN,
+        httponly=False,
+        samesite="lax",
+        secure=False,
+        path="/",
     )
+    
+    # Also try to delete with auth settings for regular login cookies
+    auth_settings = get_settings_service().auth_settings
     response.delete_cookie(
         "apikey_tkn_lflw",
         httponly=auth_settings.ACCESS_HTTPONLY,
         samesite=auth_settings.ACCESS_SAME_SITE,
         secure=auth_settings.ACCESS_SECURE,
-        domain=auth_settings.COOKIE_DOMAIN,
+        path="/",
     )
     return {"message": "Logout successful"}

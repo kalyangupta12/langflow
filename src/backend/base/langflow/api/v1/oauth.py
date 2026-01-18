@@ -63,16 +63,29 @@ async def google_oauth_authorize(request: Request):
     import time
     import hmac
     import hashlib
+    import base64
+    
+    # Get the origin from the referer header to redirect back to the correct port
+    referer = request.headers.get('referer', '')
+    if referer:
+        from urllib.parse import urlparse
+        parsed = urlparse(referer)
+        origin = f"{parsed.scheme}://{parsed.netloc}"
+    else:
+        origin = str(request.base_url).rstrip('/')
+    
+    # Encode origin in base64 to include in state
+    origin_encoded = base64.urlsafe_b64encode(origin.encode()).decode()
     
     # Get secret key as string (handle SecretStr type)
     secret_key_value = settings.SECRET_KEY.get_secret_value() if hasattr(settings.SECRET_KEY, 'get_secret_value') else str(settings.SECRET_KEY or "langflow-oauth-secret")
     timestamp = str(int(time.time()))
     random_value = secrets.token_urlsafe(16)
     
-    # Create signed state: timestamp:random:signature
-    message = f"{timestamp}:{random_value}"
+    # Create signed state: timestamp:random:origin:signature
+    message = f"{timestamp}:{random_value}:{origin_encoded}"
     signature = hmac.new(secret_key_value.encode(), message.encode(), hashlib.sha256).hexdigest()
-    state = f"{timestamp}:{random_value}:{signature}"
+    state = f"{timestamp}:{random_value}:{origin_encoded}:{signature}"
     
     google_auth_url = "https://accounts.google.com/o/oauth2/v2/auth"
     redirect_uri = str(request.base_url).rstrip("/") + "/api/v1/oauth/google/callback"
@@ -115,15 +128,24 @@ async def google_oauth_callback(
     import time
     import hmac
     import hashlib
+    import base64
     
+    frontend_url = None
     try:
-        # Parse state: timestamp:random:signature
+        # Parse state: timestamp:random:origin:signature
         parts = state.split(":")
-        if len(parts) != 3:
+        if len(parts) != 4:
             raise ValueError("Invalid state format")
         
-        timestamp_str, random_value, received_signature = parts
+        timestamp_str, random_value, origin_encoded, received_signature = parts
         timestamp = int(timestamp_str)
+        
+        # Decode origin
+        try:
+            frontend_url = base64.urlsafe_b64decode(origin_encoded).decode()
+        except Exception:
+            # Fallback if origin decode fails
+            frontend_url = str(request.base_url).rstrip('/')
         
         # Check if state is not too old (e.g., 10 minutes)
         current_time = int(time.time())
@@ -132,7 +154,7 @@ async def google_oauth_callback(
         
         # Verify signature
         secret_key_value = settings.SECRET_KEY.get_secret_value() if hasattr(settings.SECRET_KEY, 'get_secret_value') else str(settings.SECRET_KEY or "langflow-oauth-secret")
-        message = f"{timestamp_str}:{random_value}"
+        message = f"{timestamp_str}:{random_value}:{origin_encoded}"
         expected_signature = hmac.new(secret_key_value.encode(), message.encode(), hashlib.sha256).hexdigest()
         
         if not hmac.compare_digest(expected_signature, received_signature):
@@ -225,25 +247,25 @@ async def google_oauth_callback(
     # Generate JWT tokens
     user_tokens = await create_user_tokens(user_id=user.id, db=db, update_last_login=True)
     
-    # Create HTML response that stores tokens and redirects
+    # frontend_url is already decoded from the state parameter above
+    # Fallback to base URL if it wasn't set
+    if not frontend_url:
+        frontend_url = str(request.base_url).rstrip('/')
+    
+    # Create HTML response that stores tokens in localStorage and redirects
+    # DO NOT set cookies via JavaScript - use Set-Cookie headers only
     html_content = f"""
     <!DOCTYPE html>
     <html>
     <head>
         <title>Login Success</title>
         <script>
-            // Store both tokens in localStorage
+            // Store both tokens in localStorage so frontend can use them
             localStorage.setItem('access_token_lf', '{user_tokens["access_token"]}');
             localStorage.setItem('refresh_token_lf', '{user_tokens["refresh_token"]}');
             
-            // Also set cookies via JavaScript as backup
-            document.cookie = 'access_token_lf={user_tokens["access_token"]}; path=/; max-age={settings.ACCESS_TOKEN_EXPIRE_SECONDS}; samesite=lax';
-            document.cookie = 'refresh_token_lf={user_tokens["refresh_token"]}; path=/; max-age={settings.REFRESH_TOKEN_EXPIRE_SECONDS}; samesite=lax';
-            
-            // Redirect to home page after a short delay to ensure cookies are set
-            setTimeout(function() {{
-                window.location.href = 'http://127.0.0.1:7860/';
-            }}, 500);
+            // Redirect to home page immediately
+            window.location.href = '{frontend_url}/';
         </script>
     </head>
     <body>
@@ -252,14 +274,14 @@ async def google_oauth_callback(
     </html>
     """
     
-    # Create response with cookies set via Set-Cookie headers
+    # Create response with cookies set ONLY via Set-Cookie headers
     html_response = Response(content=html_content, media_type="text/html")
     
-    # Set refresh token cookie (HTTP-only for security)
+    # Set refresh token cookie (NOT httponly so it can be deleted properly)
     html_response.set_cookie(
         "refresh_token_lf",
         user_tokens["refresh_token"],
-        httponly=True,
+        httponly=False,
         samesite="lax",
         secure=False,
         max_age=settings.REFRESH_TOKEN_EXPIRE_SECONDS,

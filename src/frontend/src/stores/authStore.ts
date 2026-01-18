@@ -18,6 +18,7 @@ const useAuthStore = create<AuthStoreType>((set, get) => ({
   autoLogin: null,
   apiKey: cookies.get(LANGFLOW_API_TOKEN),
   authenticationErrorCount: 0,
+  isLoggingOut: false, // Add flag to prevent auto-refresh during logout
 
   setIsAdmin: (isAdmin) => set({ isAdmin }),
   setIsAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
@@ -29,12 +30,15 @@ const useAuthStore = create<AuthStoreType>((set, get) => ({
     set({ authenticationErrorCount }),
 
   logout: async () => {
-    localStorage.removeItem(LANGFLOW_ACCESS_TOKEN);
-    localStorage.removeItem(LANGFLOW_API_TOKEN);
-    localStorage.removeItem(LANGFLOW_REFRESH_TOKEN);
+    // Set logout flag to prevent token refresh
+    set({ isLoggingOut: true });
+    
+    // Clear all localStorage - comprehensive cleanup
+    localStorage.clear();
 
-    cookieManager.clearAuthCookies();
-
+    // Clear all session storage as well
+    sessionStorage.clear();
+    
     get().setIsAuthenticated(false);
     get().setIsAdmin(false);
 

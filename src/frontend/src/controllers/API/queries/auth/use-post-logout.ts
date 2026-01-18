@@ -30,23 +30,55 @@ export const useLogout: useMutationFunctionType<undefined, void> = (
     if (autoLogin) {
       return {};
     }
+    
+    // Call backend to delete server-side cookies via Set-Cookie headers
     const res = await api.post(`${getURL("LOGOUT")}`);
     return res.data;
   }
 
   const mutation = mutate(["useLogout"], logoutUser, {
     onSuccess: () => {
+      // Backend has cleared cookies, now aggressively clear frontend
       logout();
 
       useFlowStore.getState().resetFlowState();
       useFlowsManagerStore.getState().resetStore();
       useFolderStore.getState().resetStore();
-
-      // Clear all React Query cache to prevent data leakage between users
       queryClient.clear();
+      
+      // Manually delete all auth cookies with document.cookie
+      const cookiesToDelete = ['access_token_lf', 'refresh_token_lf', 'apikey_tkn_lflw'];
+      cookiesToDelete.forEach(name => {
+        document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
+        document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=${window.location.hostname}`;
+        document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; samesite=lax`;
+        document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=${window.location.hostname}; samesite=lax`;
+      });
+      
+      // Force hard reload to login page after a small delay
+      setTimeout(() => {
+        window.location.replace('/login');
+      }, 50);
     },
     onError: (error) => {
       console.error(error);
+      // Even on error, force clear everything
+      logout();
+      useFlowStore.getState().resetFlowState();
+      useFlowsManagerStore.getState().resetStore();
+      useFolderStore.getState().resetStore();
+      queryClient.clear();
+      
+      // Clear cookies even on error
+      const cookiesToDelete = ['access_token_lf', 'refresh_token_lf', 'apikey_tkn_lflw'];
+      cookiesToDelete.forEach(name => {
+        document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
+        document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=${window.location.hostname}`;
+      });
+      
+      setTimeout(() => {
+        window.location.replace('/login');
+      }, 50);
     },
     ...options,
     retry: false,

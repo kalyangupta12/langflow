@@ -8,6 +8,7 @@ export interface AuthStoreType {
   autoLogin: boolean | null;
   apiKey: string | null;
   authenticationErrorCount: number;
+  isLoggingOut: boolean;
 
   setIsAdmin: (isAdmin: boolean) => void;
   setIsAuthenticated: (isAuthenticated: boolean) => void;
