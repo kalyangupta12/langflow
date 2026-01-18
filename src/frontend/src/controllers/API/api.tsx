@@ -374,4 +374,17 @@ async function performStreamingRequest({
   }
 }
 
+/**
+ * Check if a username is available
+ * @param username - Username to check
+ * @returns Promise with availability status
+ */
+export async function checkUsernameAvailability(username: string): Promise<{
+  available: boolean;
+  username: string;
+}> {
+  const response = await api.get(`/users/check-username/${encodeURIComponent(username)}`);
+  return response.data;
+}
+
 export { api, ApiInterceptor, performStreamingRequest };

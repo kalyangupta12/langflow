@@ -80,9 +80,15 @@ const router = createBrowserRouter(
             <Route path="" element={<AppAuthenticatedPage />}>
               <Route path="" element={<CustomDashboardWrapperPage />}>
                 <Route path="" element={<CollectionPage />}>
+                  {/* Redirect root to workflows */}
                   <Route
                     index
-                    element={<CustomNavigate replace to={"flows"} />}
+                    element={<CustomNavigate replace to={"workflows"} />}
+                  />
+                  {/* Main workflows page - replaces /flows and /all */}
+                  <Route
+                    path="workflows/"
+                    element={<HomePage key="workflows" type="workflows" />}
                   />
                   {ENABLE_FILE_MANAGEMENT && (
                     <Route path="assets">
@@ -99,37 +105,16 @@ const router = createBrowserRouter(
                       )}
                     </Route>
                   )}
-                  <Route
-                    path="flows/"
-                    element={<HomePage key="flows" type="flows" />}
-                  />
+                  {/* Components page */}
                   <Route
                     path="components/"
                     element={<HomePage key="components" type="components" />}
-                  >
-                    <Route
-                      path="folder/:folderId"
-                      element={<HomePage key="components" type="components" />}
-                    />
-                  </Route>
-                  <Route
-                    path="all/"
-                    element={<HomePage key="flows" type="flows" />}
-                  >
-                    <Route
-                      path="folder/:folderId"
-                      element={<HomePage key="flows" type="flows" />}
-                    />
-                  </Route>
+                  />
+                  {/* MCP page */}
                   <Route
                     path="mcp/"
                     element={<HomePage key="mcp" type="mcp" />}
-                  >
-                    <Route
-                      path="folder/:folderId"
-                      element={<HomePage key="mcp" type="mcp" />}
-                    />
-                  </Route>
+                  />
                 </Route>
                 <Route path="settings" element={<SettingsPage />}>
                   <Route

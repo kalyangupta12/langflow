@@ -76,6 +76,7 @@ class UserRead(SQLModel):
     last_login_at: datetime | None = Field(nullable=True)
     optins: dict[str, Any] | None = Field(default=None)
     oauth_provider: str | None = Field(default=None)
+    wallet_address: str | None = Field(default=None)
     email: str | None = Field(default=None)
 
 

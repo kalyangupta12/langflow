@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PaginatorComponent from "@/components/common/paginatorComponent";
 import CardsWrapComponent from "@/components/core/cardsWrapComponent";
 import { IS_MAC } from "@/constants/constants";
@@ -20,8 +21,10 @@ import ListSkeleton from "../../components/listSkeleton";
 import ModalsComponent from "../../components/modalsComponent";
 import useFileDrop from "../../hooks/use-on-file-drop";
 import EmptyFolder from "../emptyFolder";
+import WorkflowTemplateGallery from "./components/WorkflowTemplateGallery";
 
-const HomePage = ({ type }: { type: "flows" | "components" | "mcp" }) => {
+const HomePage = ({ type }: { type: "flows" | "components" | "mcp" | "workflows" }) => {
+  const [activeTab, setActiveTab] = useState<"templates" | "myworkflows">("templates");
   const [view, setView] = useState<"grid" | "list">(() => {
     const savedView = localStorage.getItem("view");
     return savedView === "grid" || savedView === "list" ? savedView : "list";
@@ -33,8 +36,10 @@ const HomePage = ({ type }: { type: "flows" | "components" | "mcp" }) => {
   const [search, setSearch] = useState("");
   const navigate = useCustomNavigate();
 
+  // Treat 'workflows' as 'flows' for backwards compatibility
+  const normalizedType = type === "workflows" ? "flows" : type;
   const [flowType, setFlowType] = useState<"flows" | "components" | "mcp">(
-    type,
+    normalizedType,
   );
   const myCollectionId = useFolderStore((state) => state.myCollectionId);
   const folders = useFolderStore((state) => state.folders);
@@ -51,7 +56,7 @@ const HomePage = ({ type }: { type: "flows" | "components" | "mcp" }) => {
       if (!folderExists) {
         // Folder doesn't exist for this user, redirect to /all
         console.error("Invalid folderId, redirecting to /all");
-        navigate("/all");
+        navigate("/workflows");
       }
     }
   }, [folderId, folders, navigate]);
@@ -254,121 +259,251 @@ const HomePage = ({ type }: { type: "flows" | "components" | "mcp" }) => {
           {ENABLE_DATASTAX_LANGFLOW && <CustomBanner />}
           <div className="flex flex-1 flex-col justify-start p-4">
             <div className="flex h-full flex-col justify-start">
-              <HeaderComponent
-                folderName={folderName}
-                flowType={flowType}
-                setFlowType={setFlowType}
-                view={view}
-                setView={setView}
-                setNewProjectModal={setNewProjectModal}
-                setSearch={onSearch}
-                isEmptyFolder={isEmptyFolder}
-                selectedFlows={selectedFlows}
-              />
-              {isEmptyFolder ? (
-                <EmptyFolder setOpenModal={setNewProjectModal} />
-              ) : (
-                <div className="flex h-full flex-col">
-                  {isLoading ? (
-                    view === "grid" ? (
-                      <div className="mt-4 grid grid-cols-1 gap-1 md:grid-cols-2 lg:grid-cols-3">
-                        <ListSkeleton />
-                        <ListSkeleton />
-                      </div>
-                    ) : (
-                      <div className="mt-4 flex flex-col gap-1">
-                        <ListSkeleton />
-                        <ListSkeleton />
-                      </div>
-                    )
-                  ) : flowType === "mcp" ? (
-                    <CustomMcpServerTab folderName={folderName} />
-                  ) : (flowType === "flows" || flowType === "components") &&
-                    data &&
-                    data.pagination.total > 0 ? (
-                    view === "grid" ? (
-                      <div className="mt-4 grid grid-cols-1 gap-1 md:grid-cols-2 lg:grid-cols-3">
-                        {data.flows.map((flow, index) => (
-                          <ListComponent
-                            key={flow.id}
-                            flowData={flow}
-                            selected={selectedFlows.includes(flow.id)}
-                            setSelected={(selected) =>
-                              setSelectedFlow(selected, flow.id, index)
-                            }
-                            shiftPressed={isShiftPressed || isCtrlPressed}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="mt-4 flex flex-col gap-1">
-                        {data.flows.map((flow, index) => (
-                          <ListComponent
-                            key={flow.id}
-                            flowData={flow}
-                            selected={selectedFlows.includes(flow.id)}
-                            setSelected={(selected) =>
-                              setSelectedFlow(selected, flow.id, index)
-                            }
-                            shiftPressed={isShiftPressed || isCtrlPressed}
-                          />
-                        ))}
-                      </div>
-                    )
-                  ) : flowType === "flows" ? (
-                    <div className="pt-24 text-center text-sm text-secondary-foreground">
-                      No flows in this project.{" "}
-                      <a
-                        onClick={() => setNewProjectModal(true)}
-                        className="cursor-pointer underline"
-                      >
-                        Create a new flow
-                      </a>
-                      , or browse the store.
+              {/* Show tabs only for workflows type */}
+              {type === "workflows" ? (
+                <div className="h-full">
+                  <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "templates" | "myworkflows")} className="h-full flex flex-col">
+                    <div className="border-b mb-4">
+                      <TabsList className="bg-transparent h-auto p-0">
+                        <TabsTrigger 
+                          value="templates" 
+                          className="data-[state=active]:border-b-2 data-[state=active]:border-emerald-400 data-[state=active]:text-emerald-300 rounded-none px-4 py-2"
+                        >
+                          Workflow Templates
+                        </TabsTrigger>
+                        <TabsTrigger 
+                          value="myworkflows"
+                          className="data-[state=active]:border-b-2 data-[state=active]:border-emerald-400 data-[state=active]:text-emerald-300 rounded-none px-4 py-2"
+                        >
+                          My Workflows
+                        </TabsTrigger>
+                      </TabsList>
                     </div>
+                    
+                    <TabsContent value="templates" className="flex-1 mt-0">
+                      <WorkflowTemplateGallery />
+                    </TabsContent>
+                    
+                    <TabsContent value="myworkflows" className="flex-1 mt-0">
+                      <div className="h-full">
+                        <HeaderComponent
+                          folderName={folderName}
+                          flowType={flowType}
+                          setFlowType={setFlowType}
+                          view={view}
+                          setView={setView}
+                          setNewProjectModal={setNewProjectModal}
+                          setSearch={onSearch}
+                          isEmptyFolder={isEmptyFolder}
+                          selectedFlows={selectedFlows}
+                          setSelectedFlows={setSelectedFlows}
+                        />
+                        
+                        {isLoading ? (
+                          <ListSkeleton />
+                        ) : (
+                          <div className="mt-4">
+                            {ENABLE_MCP && flowType === "mcp" ? (
+                              <CustomMcpServerTab />
+                            ) : isEmptyFolder ? (
+                              <EmptyFolder
+                                flowType={flowType}
+                                setNewProjectModal={setNewProjectModal}
+                              />
+                            ) : (
+                              <>
+                                {data.flows.length > 0 ? (
+                                  view === "grid" ? (
+                                    <div className="grid gap-4 pb-4 lg:grid-cols-2 2xl:grid-cols-3">
+                                      {data.flows.map((flow, index) => (
+                                        <CardsWrapComponent
+                                          key={flow.id}
+                                          flowData={flow}
+                                          selected={selectedFlows.includes(flow.id)}
+                                          setSelected={(selected) =>
+                                            setSelectedFlow(selected, flow.id, index)
+                                          }
+                                          shiftPressed={isShiftPressed || isCtrlPressed}
+                                        />
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="mt-4 flex flex-col gap-1">
+                                      {data.flows.map((flow, index) => (
+                                        <ListComponent
+                                          key={flow.id}
+                                          flowData={flow}
+                                          selected={selectedFlows.includes(flow.id)}
+                                          setSelected={(selected) =>
+                                            setSelectedFlow(selected, flow.id, index)
+                                          }
+                                          shiftPressed={isShiftPressed || isCtrlPressed}
+                                        />
+                                      ))}
+                                    </div>
+                                  )
+                                ) : flowType === "flows" ? (
+                                  <div className="pt-24 text-center text-sm text-secondary-foreground">
+                                    No flows in this project.{" "}
+                                    <a
+                                      onClick={() => setNewProjectModal(true)}
+                                      className="cursor-pointer underline"
+                                    >
+                                      Create a new flow
+                                    </a>
+                                    , or browse the store.
+                                  </div>
+                                ) : (
+                                  <div className="pt-24 text-center text-sm text-secondary-foreground">
+                                    No saved or custom components. Learn more about{" "}
+                                    <a
+                                      href="https://docs.langflow.org/components-custom-components"
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="underline"
+                                    >
+                                      creating custom components
+                                    </a>
+                                    , or browse the store.
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        )}
+                        
+                        {(flowType === "flows" || flowType === "components") &&
+                          !isLoading &&
+                          !isEmptyFolder &&
+                          data.pagination.total >= 10 && (
+                            <div className="flex justify-end px-3 py-4">
+                              <PaginatorComponent
+                                pageIndex={data.pagination.page}
+                                pageSize={data.pagination.size}
+                                rowsCount={[12, 24, 48, 96]}
+                                totalRowsCount={data.pagination.total}
+                                paginate={handlePageChange}
+                                pages={data.pagination.pages}
+                                isComponent={flowType === "components"}
+                              />
+                            </div>
+                          )}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              ) : (
+                <>
+                  <HeaderComponent
+                    folderName={folderName}
+                    flowType={flowType}
+                    setFlowType={setFlowType}
+                    view={view}
+                    setView={setView}
+                    setNewProjectModal={setNewProjectModal}
+                    setSearch={onSearch}
+                    isEmptyFolder={isEmptyFolder}
+                    selectedFlows={selectedFlows}
+                    setSelectedFlows={setSelectedFlows}
+                  />
+                  {isLoading ? (
+                    <ListSkeleton />
                   ) : (
-                    <div className="pt-24 text-center text-sm text-secondary-foreground">
-                      No saved or custom components. Learn more about{" "}
-                      <a
-                        href="https://docs.langflow.org/components-custom-components"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline"
-                      >
-                        creating custom components
-                      </a>
-                      , or browse the store.
+                    <div className="mt-4">
+                      {ENABLE_MCP && flowType === "mcp" ? (
+                        <CustomMcpServerTab />
+                      ) : isEmptyFolder ? (
+                        <EmptyFolder
+                          flowType={flowType}
+                          setNewProjectModal={setNewProjectModal}
+                        />
+                      ) : (
+                        <>
+                          {data.flows.length > 0 ? (
+                            view === "grid" ? (
+                              <div className="grid gap-4 pb-4 lg:grid-cols-2 2xl:grid-cols-3">
+                                {data.flows.map((flow, index) => (
+                                  <CardsWrapComponent
+                                    key={flow.id}
+                                    flowData={flow}
+                                    selected={selectedFlows.includes(flow.id)}
+                                    setSelected={(selected) =>
+                                      setSelectedFlow(selected, flow.id, index)
+                                    }
+                                    shiftPressed={isShiftPressed || isCtrlPressed}
+                                  />
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="mt-4 flex flex-col gap-1">
+                                {data.flows.map((flow, index) => (
+                                  <ListComponent
+                                    key={flow.id}
+                                    flowData={flow}
+                                    selected={selectedFlows.includes(flow.id)}
+                                    setSelected={(selected) =>
+                                      setSelectedFlow(selected, flow.id, index)
+                                    }
+                                    shiftPressed={isShiftPressed || isCtrlPressed}
+                                  />
+                                ))}
+                              </div>
+                            )
+                          ) : flowType === "flows" ? (
+                            <div className="pt-24 text-center text-sm text-secondary-foreground">
+                              No flows in this project.{" "}
+                              <a
+                                onClick={() => setNewProjectModal(true)}
+                                className="cursor-pointer underline"
+                              >
+                                Create a new flow
+                              </a>
+                              , or browse the store.
+                            </div>
+                          ) : (
+                            <div className="pt-24 text-center text-sm text-secondary-foreground">
+                              No saved or custom components. Learn more about{" "}
+                              <a
+                                href="https://docs.langflow.org/components-custom-components"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="underline"
+                              >
+                                creating custom components
+                              </a>
+                              , or browse the store.
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                   )}
-                </div>
+                  {(flowType === "flows" || flowType === "components") &&
+                    !isLoading &&
+                    !isEmptyFolder &&
+                    data.pagination.total >= 10 && (
+                      <div className="flex justify-end px-3 py-4">
+                        <PaginatorComponent
+                          pageIndex={data.pagination.page}
+                          pageSize={data.pagination.size}
+                          rowsCount={[12, 24, 48, 96]}
+                          totalRowsCount={data.pagination.total}
+                          paginate={handlePageChange}
+                          pages={data.pagination.pages}
+                          isComponent={flowType === "components"}
+                        />
+                      </div>
+                    )}
+                </>
               )}
             </div>
           </div>
-          {(flowType === "flows" || flowType === "components") &&
-            !isLoading &&
-            !isEmptyFolder &&
-            data.pagination.total >= 10 && (
-              <div className="flex justify-end px-3 py-4">
-                <PaginatorComponent
-                  pageIndex={data.pagination.page}
-                  pageSize={data.pagination.size}
-                  rowsCount={[12, 24, 48, 96]}
-                  totalRowsCount={data.pagination.total}
-                  paginate={handlePageChange}
-                  pages={data.pagination.pages}
-                  isComponent={flowType === "components"}
-                />
-              </div>
-            )}
         </div>
       </div>
 
       <ModalsComponent
         openModal={newProjectModal}
         setOpenModal={setNewProjectModal}
-        openDeleteFolderModal={false}
-        setOpenDeleteFolderModal={() => {}}
-        handleDeleteFolder={() => {}}
       />
     </CardsWrapComponent>
   );

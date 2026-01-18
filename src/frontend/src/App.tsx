@@ -5,7 +5,7 @@ import { AuthContext } from "./contexts/authContext";
 import { LoadingPage } from "./pages/LoadingPage";
 import router from "./routes";
 import { useDarkStore } from "./stores/darkStore";
-
+import { HeaderButtons } from "./components/core/folderSidebarComponent/components/sideBarFolderButtons/components/header-buttons";
 export default function App() {
   const dark = useDarkStore((state) => state.dark);
   const { login } = useContext(AuthContext);

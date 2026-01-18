@@ -36,9 +36,16 @@ export default function TemplatesModal({
 
     addFlow()
       .then((id) => {
-        navigate(`/flow/${id}${folderId ? `/folder/${folderId}` : ""}`);
+        console.log("Blank flow created with ID:", id);
+        // Add small delay to ensure flow is added to store before navigation
+        setTimeout(() => {
+          handleFlowCreating(false);
+          setOpen(false); // Close modal
+          navigate(`/flow/${id}`);
+        }, 300);
       })
-      .finally(() => {
+      .catch((error) => {
+        console.error("Error creating blank flow:", error);
         handleFlowCreating(false);
       });
   };
@@ -65,7 +72,7 @@ export default function TemplatesModal({
         },
         { title: "Q&A", icon: "Database", id: "q-a" },
         // { title: "Summarization", icon: "Bot", id: "summarization" },
-        // { title: "Web Scraping", icon: "CodeXml", id: "web-scraping" },
+        { title: "Web Scraping", icon: "CodeXml", id: "web-scraping" },
       ],
     },
     {
@@ -93,6 +100,7 @@ export default function TemplatesModal({
                 <GetStartedComponent
                   loading={loading}
                   onFlowCreating={handleFlowCreating}
+                  onClose={() => setOpen(false)}
                 />
               ) : (
                 <TemplateContentComponent
@@ -100,6 +108,7 @@ export default function TemplatesModal({
                   categories={categories.flatMap((category) => category.items)}
                   loading={loading}
                   onFlowCreating={handleFlowCreating}
+                  onClose={() => setOpen(false)}
                 />
               )}
               <BaseModal.Footer>

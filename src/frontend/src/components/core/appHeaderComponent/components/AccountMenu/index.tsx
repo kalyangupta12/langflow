@@ -1,5 +1,8 @@
-import { FaDiscord, FaGithub } from "react-icons/fa";
+import { useState } from "react";
+import { FaDiscord, FaGithub, FaGoogle } from "react-icons/fa";
 import { ForwardedIconComponent } from "@/components/common/genericIconComponent";
+import ShadTooltip from "@/components/common/shadTooltipComponent";
+import { Button } from "@/components/ui/button";
 import {
   DATASTAX_DOCS_URL,
   DISCORD_URL,
@@ -22,20 +25,31 @@ import {
   HeaderMenuToggle,
 } from "../HeaderMenu";
 import ThemeButtons from "../ThemeButtons";
-
+import { GoogleIcon } from "@/icons/Google";
+import PhantomIcon from "@/assets/phantom-icon.svg?react";
 export const AccountMenu = () => {
   const version = useDarkStore((state) => state.version);
   const latestVersion = useDarkStore((state) => state.latestVersion);
   const navigate = useCustomNavigate();
   const { mutate: mutationLogout } = useLogout();
+  const [copied, setCopied] = useState(false);
 
-  const { isAdmin, autoLogin } = useAuthStore((state) => ({
+  const { isAdmin, autoLogin, userData } = useAuthStore((state) => ({
     isAdmin: state.isAdmin,
     autoLogin: state.autoLogin,
+    userData: state.userData,
   }));
 
   const handleLogout = () => {
     mutationLogout();
+  };
+
+  const handleCopyAddress = () => {
+    if (userData?.wallet_address) {
+      navigator.clipboard.writeText(userData.wallet_address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const isLatestVersion = (() => {
@@ -47,6 +61,10 @@ export const AccountMenu = () => {
     return currentBaseVersion === latestBaseVersion;
   })();
 
+  const oauthProvider = userData?.oauth_provider;
+  const walletAddress = userData?.wallet_address;
+  console.log("oauthProvider:", oauthProvider);
+  console.log("walletAddress:", walletAddress);
   return (
     <HeaderMenu>
       <HeaderMenuToggle>
@@ -59,29 +77,47 @@ export const AccountMenu = () => {
       </HeaderMenuToggle>
       <HeaderMenuItems position="right" classNameSize="w-[272px]">
         <div className="divide-y divide-foreground/10">
-          <div>
-            <div className="h-[44px] items-center px-4 pt-3">
-              <div className="flex items-center justify-between">
-                <span
-                  data-testid="menu_version_button"
-                  id="menu_version_button"
-                  className="text-sm"
-                >
-                  Version
-                </span>
-                <div
-                  className={cn(
-                    "float-right text-xs",
-                    isLatestVersion && "text-accent-emerald-foreground",
-                    !isLatestVersion && "text-accent-amber-foreground",
-                  )}
-                >
-                  {version}{" "}
-                  {isLatestVersion ? "(latest)" : "(update available)"}
+          {oauthProvider && (
+            <div>
+              <div className="px-4 py-3">
+                <div className="flex items-center gap-2">
+                  {oauthProvider === "google" ? (
+                    <>
+                      <GoogleIcon />
+                      <span className="text-sm">Authenticated with Google</span>
+                    </>
+                  ) : oauthProvider === "phantom" ? (
+                    <>
+                      <PhantomIcon className="h-4 w-4" />
+                      
+                      <span className="text-sm">Authenticated with Phantom</span>
+                    </>
+                  ) : null}
                 </div>
+                {oauthProvider === "phantom" && walletAddress && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <ForwardedIconComponent name="Wallet" className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground font-mono">
+                      {`Wallet: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
+                    </span>
+                    <ShadTooltip content={copied ? "Copied!" : "Copy address"} side="top">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={handleCopyAddress}
+                      >
+                        <ForwardedIconComponent 
+                          name={copied ? "Check" : "Copy"} 
+                          className="h-3 w-3" 
+                        />
+                      </Button>
+                    </ShadTooltip>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          )}
 
           <div>
             <HeaderMenuItemButton
@@ -113,17 +149,17 @@ export const AccountMenu = () => {
                 </HeaderMenuItemButton>
               </div>
             )}
-            <HeaderMenuItemLink
+            {/* <HeaderMenuItemLink
               newPage
               href={ENABLE_DATASTAX_LANGFLOW ? DATASTAX_DOCS_URL : DOCS_URL}
             >
               <span data-testid="menu_docs_button" id="menu_docs_button">
                 Docs
               </span>
-            </HeaderMenuItemLink>
+            </HeaderMenuItemLink> */}
           </div>
 
-          <div>
+          {/* <div>
             <HeaderMenuItemLink newPage href={GITHUB_URL}>
               <span
                 data-testid="menu_github_button"
@@ -158,7 +194,7 @@ export const AccountMenu = () => {
                 X
               </span>
             </HeaderMenuItemLink>
-          </div>
+          </div> */}
 
           <div className="flex items-center justify-between px-4 py-[6.5px] text-sm">
             <span className="">Theme</span>

@@ -183,6 +183,9 @@ export type Users = {
   profile_image: string;
   create_at: Date;
   updated_at: Date;
+  oauth_provider?: string;
+  oauth_id?: string;
+  wallet_address?: string;
   optins?: {
     github_starred?: boolean;
     discord_clicked?: boolean;

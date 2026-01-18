@@ -14,11 +14,13 @@ import TemplateGetStartedCardComponent from "../TemplateGetStartedCardComponent"
 interface GetStartedComponentProps {
   loading: boolean;
   onFlowCreating: (loading: boolean) => void;
+  onClose?: () => void;
 }
 
 export default function GetStartedComponent({
   loading,
   onFlowCreating,
+  onClose,
 }: GetStartedComponentProps) {
   const examples = useFlowsManagerStore((state) => state.examples);
 
@@ -67,6 +69,7 @@ export default function GetStartedComponent({
             {...card}
             loading={loading}
             onFlowCreating={onFlowCreating}
+            onClose={onClose}
           />
         ))}
       </div>

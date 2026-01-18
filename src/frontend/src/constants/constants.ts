@@ -569,11 +569,11 @@ export const NOUNS: string[] = [
 ];
 
 /**
- * Header text for user projects
+ * Header text for user workflows
  * @constant
  *
  */
-export const USER_PROJECTS_HEADER = "My Collection";
+export const USER_PROJECTS_HEADER = "My Workflows";
 
 // This will be dynamically set based on the RUN_WITH_OPENRAG feature flag
 // The actual value is determined by the backend configuration

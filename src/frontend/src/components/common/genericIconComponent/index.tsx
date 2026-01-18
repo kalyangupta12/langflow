@@ -155,7 +155,7 @@ export const ForwardedIconComponent = memo(
       const componentProps = { ...baseProps, ref };
 
       const content = isValidComponent ? (
-        <TargetIcon {...componentProps} isDark={isDark} />
+        <TargetIcon {...componentProps} />
       ) : (
         <div {...baseProps}>{TargetIcon}</div>
       );

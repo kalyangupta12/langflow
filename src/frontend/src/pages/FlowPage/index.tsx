@@ -84,7 +84,7 @@ export default function FlowPage({ view }: { view?: boolean }): JSX.Element {
     } else if (changesNotSaved) {
       if (blocker.proceed) blocker.proceed();
     } else {
-      navigate("/all");
+      navigate("/workflows");
     }
   };
 
@@ -110,7 +110,7 @@ export default function FlowPage({ view }: { view?: boolean }): JSX.Element {
         const isAnExistingFlow = flows.find((flow) => flow.id === id);
 
         if (!isAnExistingFlow) {
-          navigate("/all");
+          navigate("/workflows");
           return;
         }
 

@@ -4,7 +4,7 @@ import ForwardedIconComponent from "@/components/common/genericIconComponent";
 import ShadTooltip from "@/components/common/shadTooltipComponent";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+
 import { useDeleteDeleteFlows } from "@/controllers/API/queries/flows/use-delete-delete-flows";
 import { useGetDownloadFlows } from "@/controllers/API/queries/flows/use-get-download-flows";
 import { ENABLE_MCP } from "@/customization/feature-flags";
@@ -95,23 +95,15 @@ const HeaderComponent = ({
 
   return (
     <>
-      <div
+
+    {/* will implement header later when multiple porjects will be enabled for pro user */}
+      {/* <div
         className="flex items-center pb-4 text-sm font-medium"
         data-testid="mainpage_title"
       >
-        <div className="h-7 w-10 transition-all group-data-[open=true]/sidebar-wrapper:md:w-0 lg:hidden">
-          <div className="relative left-0 opacity-100 transition-all group-data-[open=true]/sidebar-wrapper:md:opacity-0">
-            <SidebarTrigger>
-              <ForwardedIconComponent
-                name="PanelLeftOpen"
-                aria-hidden="true"
-                className=""
-              />
-            </SidebarTrigger>
-          </div>
-        </div>
+  
         {folderName}
-      </div>
+      </div> */}
       {!isEmptyFolder && (
         <>
           <div className={cn("flex flex-row-reverse pb-4")}>
@@ -153,8 +145,7 @@ const HeaderComponent = ({
                   value={debouncedSearch}
                   onChange={handleSearch}
                 />
-                <div className="relative mr-2 flex h-fit rounded-lg border border-muted bg-muted">
-                  {/* Sliding Indicator */}
+                {/* <div className="relative mr-2 flex h-fit rounded-lg border border-muted bg-muted">
                   <div
                     className={`absolute top-[2px] h-[32px] w-8 transform rounded-md bg-background shadow-md transition-transform duration-300 ${
                       view === "list"
@@ -163,7 +154,6 @@ const HeaderComponent = ({
                     }`}
                   ></div>
 
-                  {/* Buttons */}
                   {["list", "grid"].map((viewType) => (
                     <Button
                       key={viewType}
@@ -183,7 +173,7 @@ const HeaderComponent = ({
                       />
                     </Button>
                   ))}
-                </div>
+                </div> */}
               </div>
               <div className="flex items-center">
                 <div
@@ -226,7 +216,7 @@ const HeaderComponent = ({
                     </Button>
                   </DeleteConfirmationModal>
                 </div>
-                <ShadTooltip content="New Flow" side="bottom">
+                <ShadTooltip content="Create Workflow" side="bottom">
                   <Button
                     variant="default"
                     size="iconMd"
@@ -241,7 +231,7 @@ const HeaderComponent = ({
                       className="h-4 w-4"
                     />
                     <span className="hidden whitespace-nowrap font-semibold md:inline">
-                      New Flow
+                      Create Workflow
                     </span>
                   </Button>
                 </ShadTooltip>

@@ -64,6 +64,15 @@
   }
 }
 
+@keyframes shine {
+  0% {
+    transform: translateX(-100%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(200%) skewX(-20deg);
+  }
+}
+
 @layer components {
   .round-buttons-position {
     @apply fixed right-4;

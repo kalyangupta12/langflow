@@ -47,17 +47,9 @@ export default function UserProfileForm({ userData, setUserData }: UserProfileFo
     const timeoutId = setTimeout(async () => {
       setIsCheckingUsername(true);
       try {
-        // Call API to check username availability
-        const response = await fetch(`/api/v1/users/check-username/${encodeURIComponent(username)}`);
-        const data = await response.json();
-        
-        if (response.ok) {
-          setUsernameAvailable(data.available);
-          setUsernameError(data.available ? "" : "Username already taken");
-        } else {
-          setUsernameError("Failed to check username availability");
-          setUsernameAvailable(false);
-        }
+        const data = await checkUsernameAvailability(username);
+        setUsernameAvailable(data.available);
+        setUsernameError(data.available ? "" : "Username already taken");
       } catch (error) {
         setUsernameError("Failed to check username availability");
         setUsernameAvailable(false);

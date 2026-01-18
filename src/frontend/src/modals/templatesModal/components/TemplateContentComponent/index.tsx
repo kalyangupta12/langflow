@@ -16,6 +16,7 @@ import { TemplateCategoryComponent } from "../TemplateCategoryComponent";
 interface TemplateContentComponentProps extends TemplateContentProps {
   loading: boolean;
   onFlowCreating: (loading: boolean) => void;
+  onClose?: () => void;
 }
 
 export default function TemplateContentComponent({
@@ -23,6 +24,7 @@ export default function TemplateContentComponent({
   categories,
   loading,
   onFlowCreating,
+  onClose,
 }: TemplateContentComponentProps) {
   const allExamples = useFlowsManagerStore((state) => state.examples);
 
@@ -78,14 +80,23 @@ export default function TemplateContentComponent({
     if (loading) return;
     onFlowCreating(true);
     updateIds(example.data);
+    
+    track("New Flow Created", { template: `${example.name} Template` });
+    
     addFlow({ flow: example })
       .then((id) => {
-        navigate(`/flow/${id}/folder/${folderIdUrl}`);
+        console.log("Flow created with ID:", id);
+        // Add small delay to ensure flow is added to store before navigation
+        setTimeout(() => {
+          onFlowCreating(false);
+          onClose?.(); // Close modal if callback provided
+          navigate(`/flow/${id}`);
+        }, 300);
       })
-      .finally(() => {
+      .catch((error) => {
+        console.error("Error creating flow:", error);
         onFlowCreating(false);
       });
-    track("New Flow Created", { template: `${example.name} Template` });
   };
 
   const handleClearSearch = () => {

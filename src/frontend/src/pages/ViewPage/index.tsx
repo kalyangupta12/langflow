@@ -20,7 +20,7 @@ export default function ViewPage() {
         const isAnExistingFlow = flows.find((flow) => flow.id === id);
 
         if (!isAnExistingFlow) {
-          navigate("/all");
+          navigate("/workflows");
           return;
         }
 
