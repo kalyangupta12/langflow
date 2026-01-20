@@ -60,7 +60,7 @@ export default function SettingsPage(): JSX.Element {
     <PageLayout
       backTo={-1 as To}
       title="Settings"
-      description="Manage the general settings for Langflow."
+      description="Manage the general settings for AgentsTrail AI."
     >
       <SidebarProvider width="15rem" defaultOpen={false}>
         <SideBarButtonsComponent items={sidebarNavItems} />

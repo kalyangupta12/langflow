@@ -158,6 +158,7 @@ export type LoginAuthType = {
 
 export type changeUser = {
   username?: string;
+  email?: string;
   is_active?: boolean;
   is_superuser?: boolean;
   password?: string;

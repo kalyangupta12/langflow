@@ -27,6 +27,8 @@ import {
 import ThemeButtons from "../ThemeButtons";
 import { GoogleIcon } from "@/icons/Google";
 import PhantomIcon from "@/assets/phantom-icon.svg?react";
+import SolfrareIcon from "@/assets/solflare.svg?react";
+import BackpackIcon from "@/assets/backpack.svg?react";
 export const AccountMenu = () => {
   const version = useDarkStore((state) => state.version);
   const latestVersion = useDarkStore((state) => state.latestVersion);
@@ -92,9 +94,61 @@ export const AccountMenu = () => {
                       
                       <span className="text-sm">Authenticated with Phantom</span>
                     </>
+                  ) : oauthProvider === "solflare" ? (
+                    <>
+                      <SolfrareIcon className="h-4 w-4" />
+                      <span className="text-sm">Authenticated with Solflare</span>
+                    </>
+                  ) : oauthProvider === "backpack" ? (
+                    <>
+                      <BackpackIcon className="h-4 w-4" />
+                      <span className="text-sm">Authenticated with Backpack</span>
+                    </>
                   ) : null}
                 </div>
                 {oauthProvider === "phantom" && walletAddress && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <ForwardedIconComponent name="Wallet" className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground font-mono">
+                      {`Wallet: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
+                    </span>
+                    <ShadTooltip content={copied ? "Copied!" : "Copy address"} side="top">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={handleCopyAddress}
+                      >
+                        <ForwardedIconComponent 
+                          name={copied ? "Check" : "Copy"} 
+                          className="h-3 w-3" 
+                        />
+                      </Button>
+                    </ShadTooltip>
+                  </div>
+                )}
+                {oauthProvider === "solflare" && walletAddress && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <ForwardedIconComponent name="Wallet" className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground font-mono">
+                      {`Wallet: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
+                    </span>
+                    <ShadTooltip content={copied ? "Copied!" : "Copy address"} side="top">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={handleCopyAddress}
+                      >
+                        <ForwardedIconComponent 
+                          name={copied ? "Check" : "Copy"} 
+                          className="h-3 w-3" 
+                        />
+                      </Button>
+                    </ShadTooltip>
+                  </div>
+                )}
+                {oauthProvider === "backpack" && walletAddress && (
                   <div className="mt-2 flex items-center gap-2">
                     <ForwardedIconComponent name="Wallet" className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground font-mono">

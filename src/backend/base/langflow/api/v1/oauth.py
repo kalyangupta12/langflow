@@ -34,6 +34,7 @@ class PhantomVerifyRequest(BaseModel):
     publicKey: str
     signature: list[int]  # Phantom sends signature as byte array
     message: str
+    provider: str | None = "phantom"  # Allow specifying wallet provider
 
 
 # ============================================================================
@@ -313,26 +314,27 @@ async def phantom_wallet_verify(
     response: Response,
     db: DbSession,
 ):
-    """Verify Phantom wallet signature and create/login user."""
+    """Verify Solana wallet signature and create/login user (Phantom, Solflare, Backpack)."""
     settings = get_settings_service().auth_settings
     
     wallet_address = verify_request.publicKey
     signature = verify_request.signature
     message = verify_request.message
+    provider = verify_request.provider or "phantom"  # Default to phantom if not specified
     
-    # Create username from wallet address
-    username = f"phantom_{wallet_address[:8]}_{wallet_address[-4:]}"
+    # Create username from wallet address with provider prefix
+    username = f"{provider}_{wallet_address[:8]}_{wallet_address[-4:]}"
     
     # Try to find existing user
     user = await get_user_by_username(db, username)
     
     if not user:
-        # Create new user with Phantom wallet
+        # Create new user with wallet provider
         new_user = User(
             username=username,
             password=get_password_hash(secrets.token_urlsafe(32)),
             is_active=True,
-            oauth_provider="phantom",
+            oauth_provider=provider,
             oauth_id=wallet_address,
             wallet_address=wallet_address,
         )

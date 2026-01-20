@@ -91,12 +91,20 @@ async def patch_user(
 
     if not user.is_superuser and user.id != user_id:
         raise HTTPException(status_code=403, detail="Permission denied")
+    
     if update_password:
         if not user.is_superuser:
             raise HTTPException(status_code=400, detail="You can't change your password here")
         user_update.password = get_password_hash(user_update.password)
 
     if user_db := await get_user_by_id(session, user_id):
+        # Prevent Google OAuth users from changing their email
+        if user_update.email and user_db.oauth_provider == "google":
+            raise HTTPException(
+                status_code=400, 
+                detail="Cannot change email for Google OAuth users"
+            )
+        
         if not update_password:
             user_update.password = user_db.password
         return await update_user(user_db, user_update, session)

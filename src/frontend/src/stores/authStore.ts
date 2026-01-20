@@ -33,8 +33,24 @@ const useAuthStore = create<AuthStoreType>((set, get) => ({
     // Set logout flag to prevent token refresh
     set({ isLoggingOut: true });
     
+    // Save settings that should persist across logout
+    const isDark = localStorage.getItem('isDark');
+    const githubStars = localStorage.getItem('githubStars');
+    const githubStarsLastUpdated = localStorage.getItem('githubStarsLastUpdated');
+    
     // Clear all localStorage - comprehensive cleanup
     localStorage.clear();
+    
+    // Restore non-auth settings
+    if (isDark !== null) {
+      localStorage.setItem('isDark', isDark);
+    }
+    if (githubStars !== null) {
+      localStorage.setItem('githubStars', githubStars);
+    }
+    if (githubStarsLastUpdated !== null) {
+      localStorage.setItem('githubStarsLastUpdated', githubStarsLastUpdated);
+    }
 
     // Clear all session storage as well
     sessionStorage.clear();

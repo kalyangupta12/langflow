@@ -87,6 +87,7 @@ class UserRead(SQLModel):
 
 class UserUpdate(SQLModel):
     username: str | None = None
+    email: str | None = None
     profile_image: str | None = None
     password: str | None = None
     is_active: bool | None = None

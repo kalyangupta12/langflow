@@ -389,7 +389,7 @@ export async function checkUsernameAvailability(username: string): Promise<{
   available: boolean;
   username: string;
 }> {
-  const response = await api.get(`/users/check-username/${encodeURIComponent(username)}`);
+  const response = await api.get(`/api/v1/users/check-username/${encodeURIComponent(username)}`);
   return response.data;
 }
 

@@ -15,6 +15,7 @@ interface UserProfileFormProps {
 
 export default function UserProfileForm({ userData, setUserData }: UserProfileFormProps) {
   const [username, setUsername] = useState(userData?.username || "");
+  const [email, setEmail] = useState(userData?.email || "");
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [usernameError, setUsernameError] = useState("");
@@ -25,10 +26,13 @@ export default function UserProfileForm({ userData, setUserData }: UserProfileFo
   const { mutate: mutatePatchUser, isPending } = useUpdateUser();
 
   const originalUsername = userData?.username || "";
+  const originalEmail = userData?.email || "";
+  const isGoogleAuth = userData?.oauth_provider === "google";
 
   useEffect(() => {
     setUsername(userData?.username || "");
-  }, [userData?.username]);
+    setEmail(userData?.email || "");
+  }, [userData?.username, userData?.email]);
 
   // Check username availability with debounce
   useEffect(() => {
@@ -85,10 +89,44 @@ export default function UserProfileForm({ userData, setUserData }: UserProfileFo
     );
   };
 
-  const hasChanges = username !== originalUsername && usernameAvailable === true;
+  const handleSaveEmail = () => {
+    if (email === originalEmail || !email) {
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setErrorData({
+        title: "Invalid Email",
+        list: ["Please enter a valid email address"],
+      });
+      return;
+    }
+
+    mutatePatchUser(
+      { user_id: userData!.id, user: { email } },
+      {
+        onSuccess: () => {
+          const newUserData = { ...userData, email };
+          setUserData(newUserData);
+          setSuccessData({ title: SAVE_SUCCESS_ALERT });
+        },
+        onError: (error) => {
+          setErrorData({
+            title: SAVE_ERROR_ALERT,
+            list: [(error as any)?.response?.data?.detail || "Failed to update email"],
+          });
+        },
+      }
+    );
+  };
+
+  const hasUsernameChanges = username !== originalUsername && usernameAvailable === true;
+  const hasEmailChanges = email !== originalEmail && email !== "" && !isGoogleAuth;
 
   // Display email from user data
-  const displayEmail = userData?.email || userData?.username || "";
+  const displayEmail = userData?.email || "";
 
   return (
     <div className="flex w-full flex-col gap-4 rounded-md border p-4">
@@ -100,20 +138,44 @@ export default function UserProfileForm({ userData, setUserData }: UserProfileFo
       </div>
 
       <div className="flex flex-col gap-4">
-        {/* Email - Read-only */}
+        {/* Email - Editable for non-Google users, Read-only for Google */}
         <div className="flex flex-col gap-2">
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
             type="email"
-            value={displayEmail}
-            disabled
-            className="bg-muted cursor-not-allowed"
+            value={isGoogleAuth ? displayEmail : email}
+            onChange={isGoogleAuth ? undefined : (e) => setEmail(e.target.value)}
+            disabled={isGoogleAuth}
+            className={isGoogleAuth ? "bg-muted cursor-not-allowed" : ""}
+            placeholder={isGoogleAuth ? "" : "Enter your email address"}
           />
           <span className="text-xs text-muted-foreground">
-            Email cannot be changed
+            {isGoogleAuth 
+              ? "Email from Google account cannot be changed" 
+              : displayEmail 
+              ? "You can update your email address" 
+              : "Add an email address to your account"}
           </span>
         </div>
+
+        {/* Save Email button for non-Google users */}
+        {hasEmailChanges && (
+          <Button
+            onClick={handleSaveEmail}
+            disabled={isPending}
+            className="w-full"
+          >
+            {isPending ? (
+              <>
+                <IconComponent name="Loader2" className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save Email"
+            )}
+          </Button>
+        )}
 
         {/* Username - Editable with availability check */}
         <div className="flex flex-col gap-2">
@@ -157,7 +219,7 @@ export default function UserProfileForm({ userData, setUserData }: UserProfileFo
         </div>
 
         {/* Save button */}
-        {hasChanges && (
+        {hasUsernameChanges && (
           <Button
             onClick={handleSaveUsername}
             disabled={isPending || isCheckingUsername || !usernameAvailable}

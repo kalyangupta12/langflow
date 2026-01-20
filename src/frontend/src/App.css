@@ -230,3 +230,4 @@ code {
   max-width: calc(var(--sidebar-width) - (var(--sidebar-width-icon) + 0.1rem));
   width: var(--sidebar-width);
 }
+

@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { AuthContext } from "@/contexts/authContext";
 import useAlertStore from "@/stores/alertStore";
 import { useQueryClient } from "@tanstack/react-query";
-
+import { Wallet } from "lucide-react";
+import Solflare from "@/assets/solflare.svg?react";
+import BackpackIcon from "@/assets/backpack.svg?react";
 interface OAuthButtonsProps {
   className?: string;
 }
@@ -13,6 +15,8 @@ interface OAuthButtonsProps {
 export default function OAuthButtons({ className }: OAuthButtonsProps) {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isPhantomLoading, setIsPhantomLoading] = useState(false);
+  const [isSolflareLoading, setIsSolflareLoading] = useState(false);
+  const [isBackpackLoading, setIsBackpackLoading] = useState(false);
   const { login } = useContext(AuthContext);
   const setErrorData = useAlertStore((state) => state.setErrorData);
   const queryClient = useQueryClient();
@@ -68,7 +72,7 @@ export default function OAuthButtons({ className }: OAuthButtonsProps) {
       const phantom = (window as any).phantom?.solana;
       
       if (!phantom) {
-        window.open("https://phantom.app/", "_blank");
+        // window.open("https://phantom.app/", "_blank");
         setErrorData({
           title: "Phantom Wallet Not Found",
           list: [
@@ -110,6 +114,7 @@ export default function OAuthButtons({ className }: OAuthButtonsProps) {
           publicKey: publicKey,
           signature: Array.from(signedMessage.signature),
           message: message,
+          provider: "phantom",
         }),
       }).catch(err => {
         throw new Error("Cannot connect to server. Please check if backend is running.");
@@ -140,6 +145,205 @@ export default function OAuthButtons({ className }: OAuthButtonsProps) {
           error instanceof Error 
             ? error.message 
             : "Failed to sign in with Phantom wallet."
+        ],
+      });
+    }
+  };
+
+  const handleSolflareLogin = async () => {
+    setIsSolflareLoading(true);
+    
+    try {
+      // Check if Solflare is installed
+      const solflare = (window as any).solflare;
+      
+      if (!solflare || !solflare.isSolflare) {
+        // window.open("https://solflare.com/", "_blank");
+        setErrorData({
+          title: "Solflare Wallet Not Found",
+          list: [
+            "Please install Solflare wallet extension and refresh the page."
+          ],
+        });
+        setIsSolflareLoading(false);
+        return;
+      }
+
+      // Connect to Solflare wallet
+      await solflare.connect();
+      const publicKey = solflare.publicKey.toString();
+
+      // Get message to sign from backend
+      const messageResponse = await fetch("/api/v1/oauth/phantom/message").catch(err => {
+        throw new Error("Cannot connect to server. Please check if backend is running.");
+      });
+      
+      if (!messageResponse.ok) {
+        throw new Error("Failed to get signature message from server");
+      }
+      
+      const { message } = await messageResponse.json();
+
+      // Encode message
+      const encodedMessage = new TextEncoder().encode(message);
+      
+      // Request signature
+      const signedMessage = await solflare.signMessage(encodedMessage, "utf8");
+      
+      // Verify signature with backend
+      const verifyResponse = await fetch("/api/v1/oauth/phantom/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          publicKey: publicKey,
+          signature: Array.from(signedMessage.signature),
+          message: message,
+          provider: "solflare",
+        }),
+      }).catch(err => {
+        throw new Error("Cannot connect to server. Please check if backend is running.");
+      });
+
+      if (!verifyResponse.ok) {
+        let errorDetail;
+        try {
+          const errorData = await verifyResponse.json();
+          errorDetail = errorData.detail || "Failed to verify wallet signature";
+        } catch {
+          errorDetail = "Failed to verify wallet signature";
+        }
+        throw new Error(errorDetail);
+      }
+
+      const tokens = await verifyResponse.json();
+      
+      // Login with received tokens
+      login(tokens.access_token, "solflare", tokens.refresh_token);
+      queryClient.clear();
+      
+    } catch (error) {
+      setIsSolflareLoading(false);
+      setErrorData({
+        title: "Solflare Sign-In Error",
+        list: [
+          error instanceof Error 
+            ? error.message 
+            : "Failed to sign in with Solflare wallet."
+        ],
+      });
+    }
+  };
+
+  const handleBackpackLogin = async () => {
+    setIsBackpackLoading(true);
+    
+    try {
+      // Check if Backpack is installed - Backpack uses window.backpack or window.xnft
+      const backpack = (window as any).backpack || (window as any).xnft?.solana;
+      
+      if (!backpack) {
+        window.open("https://backpack.app/", "_blank");
+        setErrorData({
+          title: "Backpack Wallet Not Found",
+          list: [
+            "Please install Backpack wallet extension and refresh the page."
+          ],
+        });
+        setIsBackpackLoading(false);
+        return;
+      }
+
+      // Connect to Backpack wallet
+      const response = await backpack.connect();
+      
+      // Backpack may return publicKey in different ways
+      let publicKey: string;
+      if (response?.publicKey) {
+        publicKey = typeof response.publicKey === 'string' 
+          ? response.publicKey 
+          : response.publicKey.toString();
+      } else if (backpack.publicKey) {
+        publicKey = typeof backpack.publicKey === 'string'
+          ? backpack.publicKey
+          : backpack.publicKey.toString();
+      } else {
+        throw new Error("Failed to get public key from Backpack wallet");
+      }
+
+      // Get message to sign from backend
+      const messageResponse = await fetch("/api/v1/oauth/phantom/message").catch(err => {
+        throw new Error("Cannot connect to server. Please check if backend is running.");
+      });
+      
+      if (!messageResponse.ok) {
+        throw new Error("Failed to get signature message from server");
+      }
+      
+      const { message } = await messageResponse.json();
+
+      // Encode message
+      const encodedMessage = new TextEncoder().encode(message);
+      
+      // Request signature - Backpack uses signMessage
+      const signedMessage = await backpack.signMessage(encodedMessage);
+      
+      // Backpack may return signature in different formats
+      let signatureArray: number[];
+      if (signedMessage.signature) {
+        signatureArray = Array.isArray(signedMessage.signature) 
+          ? signedMessage.signature 
+          : Array.from(signedMessage.signature);
+      } else if (Array.isArray(signedMessage)) {
+        signatureArray = signedMessage;
+      } else if (signedMessage instanceof Uint8Array) {
+        signatureArray = Array.from(signedMessage);
+      } else {
+        throw new Error("Invalid signature format from Backpack wallet");
+      }
+      
+      // Verify signature with backend
+      const verifyResponse = await fetch("/api/v1/oauth/phantom/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          publicKey: publicKey,
+          signature: signatureArray,
+          message: message,
+          provider: "backpack",
+        }),
+      }).catch(err => {
+        throw new Error("Cannot connect to server. Please check if backend is running.");
+      });
+
+      if (!verifyResponse.ok) {
+        let errorDetail;
+        try {
+          const errorData = await verifyResponse.json();
+          errorDetail = errorData.detail || "Failed to verify wallet signature";
+        } catch {
+          errorDetail = "Failed to verify wallet signature";
+        }
+        throw new Error(errorDetail);
+      }
+
+      const tokens = await verifyResponse.json();
+      
+      // Login with received tokens
+      login(tokens.access_token, "backpack", tokens.refresh_token);
+      queryClient.clear();
+      
+    } catch (error) {
+      setIsBackpackLoading(false);
+      setErrorData({
+        title: "Backpack Sign-In Error",
+        list: [
+          error instanceof Error 
+            ? error.message 
+            : "Failed to sign in with Backpack wallet."
         ],
       });
     }
@@ -194,6 +398,46 @@ export default function OAuthButtons({ className }: OAuthButtonsProps) {
           <span className="flex items-center gap-2">
             <PhantomIcon className="h-5 w-5" />
             Sign in with Phantom
+          </span>
+        )}
+      </Button>
+
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={handleSolflareLogin}
+        disabled={isSolflareLoading}
+      >
+        {isSolflareLoading ? (
+          <span className="flex items-center gap-2">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            Connecting...
+          </span>
+        ) : (
+          <span className="flex items-center gap-2">
+            <Solflare className="h-5 w-5" />
+            Sign in with Solflare
+          </span>
+        )}
+      </Button>
+
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={handleBackpackLogin}
+        disabled={isBackpackLoading}
+      >
+        {isBackpackLoading ? (
+          <span className="flex items-center gap-2">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            Connecting...
+          </span>
+        ) : (
+          <span className="flex items-center gap-2">
+            <BackpackIcon className="h-5 w-5" />
+            Sign in with Backpack
           </span>
         )}
       </Button>
