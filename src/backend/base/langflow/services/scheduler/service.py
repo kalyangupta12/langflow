@@ -38,9 +38,12 @@ class SchedulerService:
         """
         try:
             async with session_scope() as session:
-                # Get schedule
+                # Get schedule - convert string UUID to UUID object
+                from uuid import UUID as PyUUID
+                
+                schedule_uuid = PyUUID(schedule_id) if isinstance(schedule_id, str) else schedule_id
                 schedule = (
-                    await session.exec(select(Schedule).where(Schedule.id == schedule_id))
+                    await session.exec(select(Schedule).where(Schedule.id == schedule_uuid))
                 ).first()
 
                 if not schedule or schedule.status != ScheduleStatus.ACTIVE:
@@ -68,12 +71,37 @@ class SchedulerService:
 
                 try:
                     # Import the flow execution logic
-                    from langflow.processing.process import process_graph_cached
+                    from uuid import uuid4
+
+                    from lfx.graph import Graph
+                    from langflow.processing.process import run_graph_internal
+
+                    # Build graph from flow data
+                    if flow.data is None:
+                        raise ValueError(f"Flow {flow.id} has no data")
+
+                    graph = Graph.from_payload(
+                        flow.data,
+                        flow_id=str(flow.id),
+                        user_id=str(schedule.user_id),
+                        flow_name=flow.name,
+                    )
+
+                    run_id = str(uuid4())
+                    graph.set_run_id(run_id)
+
+                    # Get all output vertices
+                    outputs = [vertex.id for vertex in graph.vertices if vertex.is_output]
 
                     # Execute the flow
-                    result = await process_graph_cached(
+                    result, _ = await run_graph_internal(
+                        graph=graph,
                         flow_id=str(flow.id),
-                        session=session,
+                        session_id=None,
+                        inputs=None,
+                        outputs=outputs,
+                        stream=False,
+                        event_manager=None,
                     )
 
                     schedule.last_run_status = "success"
