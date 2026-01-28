@@ -6,6 +6,7 @@ import { LoadingPage } from "./pages/LoadingPage";
 import router from "./routes";
 import { useDarkStore } from "./stores/darkStore";
 import { HeaderButtons } from "./components/core/folderSidebarComponent/components/sideBarFolderButtons/components/header-buttons";
+import { Toaster } from "@/components/ui/sonner";
 export default function App() {
   const dark = useDarkStore((state) => state.dark);
   const { login, isAuthenticated } = useContext(AuthContext);
@@ -76,6 +77,7 @@ export default function App() {
   return (
     <Suspense fallback={<LoadingPage />}>
       <RouterProvider router={router} />
+      <Toaster />
     </Suspense>
   );
 }

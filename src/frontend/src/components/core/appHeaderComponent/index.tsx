@@ -17,11 +17,13 @@ import useTheme from "@/customization/hooks/use-custom-theme";
 import useAlertStore from "@/stores/alertStore";
 import FlowMenu from "./components/FlowMenu";
 import { Bot } from "lucide-react";
+import ZordAIModal from "@/modals/zordAIModal";
 
 export default function AppHeader(): JSX.Element {
   const notificationCenter = useAlertStore((state) => state.notificationCenter);
   const navigate = useCustomNavigate();
   const [activeState, setActiveState] = useState<"notifications" | null>(null);
+  const [zordModalOpen, setZordModalOpen] = useState(false);
   const notificationRef = useRef<HTMLButtonElement | null>(null);
   const notificationContentRef = useRef<HTMLDivElement | null>(null);
   useTheme();
@@ -94,16 +96,13 @@ export default function AppHeader(): JSX.Element {
     <CustomLangflowCounts />
   </div> */}
   <ShadTooltip
-    content="Chat with Zod Assistant"
+    content="Chat with Zord AI - Build workflows with AI guidance"
     side="bottom"
     styleClasses="z-10"
   >
     <Button
       unstyled
-      onClick={() => {
-        // Add your bot chat handler here
-        console.log("Open bot chat");
-      }}
+      onClick={() => setZordModalOpen(true)}
       className="hit-area-hover group relative items-center rounded-md px-3 py-1.5 text-muted-foreground hover:text-primary"
       data-testid="bot_chat_button"
     >
@@ -113,10 +112,12 @@ export default function AppHeader(): JSX.Element {
           className="h-4 w-4"
           strokeWidth={2}
         />
-        <span className="text-sm font-medium">Zod Bot</span>
+        <span className="text-sm font-medium">Zord AI</span>
       </div>
     </Button>
   </ShadTooltip>
+  
+  <ZordAIModal open={zordModalOpen} onClose={() => setZordModalOpen(false)} />
 
   <Button
     onClick={() => {
@@ -183,6 +184,8 @@ export default function AppHeader(): JSX.Element {
           <CustomAccountMenu />
         </div>
       </div>
+      
+      <ZordAIModal open={zordModalOpen} onClose={() => setZordModalOpen(false)} />
     </div>
   );
 }
