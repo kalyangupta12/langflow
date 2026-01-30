@@ -14,7 +14,7 @@ from langflow.api.utils import CurrentActiveUser, DbSession
 from langflow.services.database.models.flow.model import Flow, FlowCreate
 from langflow.services.database.models.folder.constants import DEFAULT_FOLDER_NAME
 from langflow.services.database.models.folder.model import Folder
-from langflow.services.deps import get_storage_service
+from langflow.services.deps import get_storage_service, get_settings_service, get_telemetry_service
 from langflow.services.storage.service import StorageService
 from langflow.services.zord.service import ZordAIService
 
@@ -116,6 +116,8 @@ class ZordCreateFlowResponse(BaseModel):
 async def analyze_user_intent(
     request: ZordAnalyzeRequest,
     current_user: CurrentActiveUser,
+    settings_service: Annotated["SettingsService", Depends(get_settings_service)],
+    telemetry_service: Annotated["TelemetryService", Depends(get_telemetry_service)],
 ) -> ZordAnalyzeResponse:
     """Analyze user intent and generate clarifying MCQs.
 
@@ -125,6 +127,8 @@ async def analyze_user_intent(
     Args:
         request: User prompt and conversation history
         current_user: Authenticated user
+        settings_service: Settings service for component loading
+        telemetry_service: Telemetry service
 
     Returns:
         MCQs for technical clarification
@@ -133,7 +137,10 @@ async def analyze_user_intent(
         HTTPException: If analysis fails
     """
     try:
-        service = ZordAIService()
+        service = ZordAIService(
+            settings_service=settings_service,
+            telemetry_service=telemetry_service
+        )
         result = await service.analyze_intent(
             prompt=request.prompt,
             conversation_history=request.conversation_history,
@@ -150,12 +157,16 @@ async def analyze_user_intent(
 async def generate_workflow_plan(
     request: ZordPlanRequest,
     current_user: CurrentActiveUser,
+    settings_service: Annotated["SettingsService", Depends(get_settings_service)],
+    telemetry_service: Annotated["TelemetryService", Depends(get_telemetry_service)],
 ) -> ZordPlanResponse:
     """Generate a detailed workflow plan based on user answers.
 
     Args:
         request: User prompt, MCQ answers, and conversation history
         current_user: Authenticated user
+        settings_service: Settings service for component loading
+        telemetry_service: Telemetry service
 
     Returns:
         Detailed workflow plan
@@ -164,7 +175,10 @@ async def generate_workflow_plan(
         HTTPException: If plan generation fails
     """
     try:
-        service = ZordAIService()
+        service = ZordAIService(
+            settings_service=settings_service,
+            telemetry_service=telemetry_service
+        )
         result = await service.generate_plan(
             prompt=request.prompt,
             answers=request.answers,
@@ -182,12 +196,16 @@ async def generate_workflow_plan(
 async def generate_workflow_json(
     request: ZordGenerateRequest,
     current_user: CurrentActiveUser,
+    settings_service: Annotated["SettingsService", Depends(get_settings_service)],
+    telemetry_service: Annotated["TelemetryService", Depends(get_telemetry_service)],
 ) -> ZordGenerateResponse:
     """Generate Langflow JSON from workflow plan.
 
     Args:
         request: Workflow plan and conversation history
         current_user: Authenticated user
+        settings_service: Settings service for component loading
+        telemetry_service: Telemetry service
 
     Returns:
         Generated Langflow JSON
@@ -196,7 +214,10 @@ async def generate_workflow_json(
         HTTPException: If JSON generation fails
     """
     try:
-        service = ZordAIService()
+        service = ZordAIService(
+            settings_service=settings_service,
+            telemetry_service=telemetry_service
+        )
         result = await service.generate_json(
             plan=request.plan,
             conversation_history=request.conversation_history,
@@ -213,12 +234,16 @@ async def generate_workflow_json(
 async def modify_workflow_plan(
     request: ZordModifyRequest,
     current_user: CurrentActiveUser,
+    settings_service: Annotated["SettingsService", Depends(get_settings_service)],
+    telemetry_service: Annotated["TelemetryService", Depends(get_telemetry_service)],
 ) -> ZordPlanResponse:
     """Modify an existing workflow plan.
 
     Args:
         request: Current plan, modification request, and conversation history
         current_user: Authenticated user
+        settings_service: Settings service for component loading
+        telemetry_service: Telemetry service
 
     Returns:
         Modified workflow plan
@@ -227,7 +252,10 @@ async def modify_workflow_plan(
         HTTPException: If modification fails
     """
     try:
-        service = ZordAIService()
+        service = ZordAIService(
+            settings_service=settings_service,
+            telemetry_service=telemetry_service
+        )
         result = await service.modify_plan(
             plan=request.plan,
             modification_request=request.modification_request,

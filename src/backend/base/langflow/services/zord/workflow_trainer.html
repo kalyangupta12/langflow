@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zord AI Workflow Trainer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #00d9ff;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+        
+        .upload-section {
+            background: rgba(255,255,255,0.05);
+            border: 2px dashed #00d9ff;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s;
+        }
+        
+        .upload-section:hover {
+            background: rgba(0,217,255,0.1);
+        }
+        
+        .upload-section.dragover {
+            background: rgba(0,217,255,0.2);
+            border-color: #00ff88;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, #00d9ff, #00ff88);
+            color: #1a1a2e;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .upload-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .panels {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 1000px) {
+            .panels {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .panel {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .panel h2 {
+            color: #00d9ff;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+        }
+        
+        .workflow-item {
+            background: rgba(0,217,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .workflow-item h3 {
+            color: #00ff88;
+            margin-bottom: 10px;
+        }
+        
+        .component-tag {
+            display: inline-block;
+            background: #00d9ff;
+            color: #1a1a2e;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            margin: 2px;
+        }
+        
+        .connection-item {
+            font-family: 'Consolas', monospace;
+            font-size: 0.9em;
+            padding: 5px 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 5px;
+            margin: 5px 0;
+            color: #00ff88;
+        }
+        
+        .connection-item .arrow {
+            color: #ff6b6b;
+        }
+        
+        .output-section {
+            margin-top: 30px;
+        }
+        
+        .output-section h2 {
+            color: #00d9ff;
+            margin-bottom: 15px;
+        }
+        
+        .code-output {
+            background: #0d1117;
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85em;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #30363d;
+        }
+        
+        .copy-btn {
+            background: #00ff88;
+            color: #1a1a2e;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .copy-btn:hover {
+            background: #00d9ff;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: rgba(0,217,255,0.1);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-card .number {
+            font-size: 2em;
+            color: #00ff88;
+            font-weight: bold;
+        }
+        
+        .stat-card .label {
+            color: #888;
+            font-size: 0.9em;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .tab-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #e0e0e0;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tab-btn.active {
+            background: #00d9ff;
+            color: #1a1a2e;
+        }
+        
+        .field-mapping {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 0.9em;
+        }
+        
+        .field-mapping div {
+            background: rgba(0,0,0,0.2);
+            padding: 8px 12px;
+            border-radius: 5px;
+        }
+        
+        .clear-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        
+        .warning {
+            background: rgba(255,107,107,0.2);
+            border: 1px solid #ff6b6b;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Zord AI Workflow Trainer</h1>
+        <p class="subtitle">Upload working Langflow JSON workflows to train the knowledge base</p>
+        
+        <div class="upload-section" id="dropZone">
+            <input type="file" id="fileInput" accept=".json" multiple>
+            <p style="margin-bottom: 20px; font-size: 1.1em;">Drag & Drop JSON workflow files here</p>
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                📁 Select Files
+            </button>
+            <p style="margin-top: 15px; color: #888;">Supports multiple files</p>
+        </div>
+        
+        <div class="stats" id="stats" style="display: none;">
+            <div class="stat-card">
+                <div class="number" id="workflowCount">0</div>
+                <div class="label">Workflows Loaded</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="componentCount">0</div>
+                <div class="label">Unique Components</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="connectionCount">0</div>
+                <div class="label">Connection Patterns</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="fieldCount">0</div>
+                <div class="label">Field Mappings</div>
+            </div>
+        </div>
+        
+        <div class="panels" id="panels" style="display: none;">
+            <div class="panel">
+                <h2>📦 Loaded Workflows</h2>
+                <div id="workflowList"></div>
+            </div>
+            <div class="panel">
+                <h2>🔗 Learned Connection Patterns</h2>
+                <div id="connectionPatterns"></div>
+            </div>
+        </div>
+        
+        <div class="output-section" id="outputSection" style="display: none;">
+            <h2>📋 Generated Training Data</h2>
+            
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="showTab('reference')">reference_workflows.py</button>
+                <button class="tab-btn" onclick="showTab('components')">Component Metadata</button>
+                <button class="tab-btn" onclick="showTab('prompts')">Prompt Patterns</button>
+                <button class="tab-btn" onclick="showTab('json')">Raw JSON</button>
+            </div>
+            
+            <div id="referenceTab" class="code-output"></div>
+            <div id="componentsTab" class="code-output" style="display:none;"></div>
+            <div id="promptsTab" class="code-output" style="display:none;"></div>
+            <div id="jsonTab" class="code-output" style="display:none;"></div>
+            
+            <button class="copy-btn" onclick="copyOutput()">📋 Copy to Clipboard</button>
+            <button class="clear-btn" onclick="clearAll()">🗑️ Clear All</button>
+        </div>
+    </div>
+
+    <script>
+        // Global knowledge base
+        const knowledgeBase = {
+            workflows: [],
+            components: new Map(),  // componentType -> {inputs: [], outputs: [], description}
+            connections: new Map(), // "source.output->target.input" -> count
+            fieldMappings: new Map(), // componentType -> {fieldName: {type, inputTypes, required}}
+            patterns: []  // Extracted workflow patterns
+        };
+        
+        let currentTab = 'reference';
+        
+        // File upload handlers
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+        
+        function handleFiles(files) {
+            Array.from(files).forEach(file => {
+                if (file.name.endsWith('.json')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const workflow = JSON.parse(e.target.result);
+                            processWorkflow(workflow, file.name);
+                        } catch (err) {
+                            console.error('Error parsing JSON:', err);
+                            alert(`Error parsing ${file.name}: ${err.message}`);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            });
+        }
+        
+        function processWorkflow(workflow, fileName) {
+            const name = workflow.name || fileName.replace('.json', '');
+            const description = workflow.description || '';
+            const nodes = workflow.data?.nodes || [];
+            const edges = workflow.data?.edges || [];
+            
+            // Extract workflow info
+            const workflowInfo = {
+                name,
+                description,
+                fileName,
+                components: [],
+                connections: [],
+                componentDetails: {}
+            };
+            
+            // Process nodes
+            nodes.forEach(node => {
+                const nodeData = node.data || {};
+                const nodeType = nodeData.type || '';
+                const nodeTemplate = nodeData.node || {};
+                
+                if (!nodeType) return;
+                
+                workflowInfo.components.push(nodeType);
+                
+                // Extract component metadata
+                if (!knowledgeBase.components.has(nodeType)) {
+                    knowledgeBase.components.set(nodeType, {
+                        displayName: nodeTemplate.display_name || nodeType,
+                        description: nodeTemplate.description || '',
+                        outputs: [],
+                        inputs: [],
+                        baseClasses: nodeTemplate.base_classes || []
+                    });
+                }
+                
+                const compInfo = knowledgeBase.components.get(nodeType);
+                
+                // Extract outputs
+                const outputs = nodeTemplate.outputs || [];
+                outputs.forEach(out => {
+                    const outName = out.name;
+                    const outTypes = out.types || [];
+                    if (outName && !compInfo.outputs.find(o => o.name === outName)) {
+                        compInfo.outputs.push({ name: outName, types: outTypes });
+                    }
+                });
+                
+                // Extract inputs from template
+                const template = nodeTemplate.template || {};
+                Object.entries(template).forEach(([fieldName, fieldData]) => {
+                    if (fieldName.startsWith('_') || fieldName === 'code') return;
+                    if (typeof fieldData !== 'object') return;
+                    
+                    const inputTypes = fieldData.input_types || [];
+                    const fieldType = fieldData.type || 'str';
+                    const required = fieldData.required || false;
+                    const show = fieldData.show !== false;
+                    
+                    if (inputTypes.length > 0 && show) {
+                        if (!compInfo.inputs.find(i => i.name === fieldName)) {
+                            compInfo.inputs.push({
+                                name: fieldName,
+                                type: fieldType,
+                                inputTypes,
+                                required
+                            });
+                        }
+                    }
+                    
+                    // Store field mapping
+                    if (!knowledgeBase.fieldMappings.has(nodeType)) {
+                        knowledgeBase.fieldMappings.set(nodeType, new Map());
+                    }
+                    const fieldMap = knowledgeBase.fieldMappings.get(nodeType);
+                    if (!fieldMap.has(fieldName) && inputTypes.length > 0) {
+                        fieldMap.set(fieldName, { type: fieldType, inputTypes, required });
+                    }
+                });
+                
+                // Store component details for this workflow
+                workflowInfo.componentDetails[node.id] = {
+                    type: nodeType,
+                    displayName: nodeTemplate.display_name || nodeType
+                };
+            });
+            
+            // Process edges
+            edges.forEach(edge => {
+                const sourceId = edge.source;
+                const targetId = edge.target;
+                const edgeData = edge.data || {};
+                
+                const sourceHandle = edgeData.sourceHandle || {};
+                const targetHandle = edgeData.targetHandle || {};
+                
+                const sourceType = sourceHandle.dataType || workflowInfo.componentDetails[sourceId]?.type || '';
+                const targetType = targetHandle.id?.split('-')[0] || workflowInfo.componentDetails[targetId]?.type || '';
+                const sourceOutput = sourceHandle.name || 'output';
+                const targetInput = targetHandle.fieldName || 'input';
+                
+                if (sourceType && targetType) {
+                    const connection = {
+                        source: sourceType,
+                        sourceOutput,
+                        target: targetType,
+                        targetInput
+                    };
+                    workflowInfo.connections.push(connection);
+                    
+                    // Track connection pattern
+                    const pattern = `${sourceType}.${sourceOutput} → ${targetType}.${targetInput}`;
+                    const count = knowledgeBase.connections.get(pattern) || 0;
+                    knowledgeBase.connections.set(pattern, count + 1);
+                }
+            });
+            
+            // Extract workflow pattern
+            const pattern = {
+                name: name.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
+                structure: workflowInfo.components.join(' → '),
+                components: [...new Set(workflowInfo.components)],
+                connections: workflowInfo.connections
+            };
+            knowledgeBase.patterns.push(pattern);
+            
+            knowledgeBase.workflows.push(workflowInfo);
+            updateUI();
+        }
+        
+        function updateUI() {
+            document.getElementById('stats').style.display = 'grid';
+            document.getElementById('panels').style.display = 'grid';
+            document.getElementById('outputSection').style.display = 'block';
+            
+            // Update stats
+            document.getElementById('workflowCount').textContent = knowledgeBase.workflows.length;
+            document.getElementById('componentCount').textContent = knowledgeBase.components.size;
+            document.getElementById('connectionCount').textContent = knowledgeBase.connections.size;
+            
+            let fieldCount = 0;
+            knowledgeBase.fieldMappings.forEach(fm => fieldCount += fm.size);
+            document.getElementById('fieldCount').textContent = fieldCount;
+            
+            // Update workflow list
+            const workflowList = document.getElementById('workflowList');
+            workflowList.innerHTML = knowledgeBase.workflows.map(w => `
+                <div class="workflow-item">
+                    <h3>${w.name}</h3>
+                    <p style="color:#888; font-size:0.9em; margin-bottom:10px;">${w.description || 'No description'}</p>
+                    <div>
+                        ${w.components.map(c => `<span class="component-tag">${c}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+            
+            // Update connection patterns (sorted by count)
+            const sortedConnections = [...knowledgeBase.connections.entries()]
+                .sort((a, b) => b[1] - a[1]);
+            
+            const connectionPatterns = document.getElementById('connectionPatterns');
+            connectionPatterns.innerHTML = sortedConnections.map(([pattern, count]) => `
+                <div class="connection-item">
+                    ${pattern.replace('→', '<span class="arrow">→</span>')} 
+                    <span style="color:#888; float:right;">×${count}</span>
+                </div>
+            `).join('');
+            
+            // Generate outputs
+            generateOutputs();
+        }
+        
+        function generateOutputs() {
+            // Generate reference_workflows.py format
+            const referenceOutput = generateReferenceWorkflows();
+            document.getElementById('referenceTab').textContent = referenceOutput;
+            
+            // Generate component metadata
+            const componentsOutput = generateComponentMetadata();
+            document.getElementById('componentsTab').textContent = componentsOutput;
+            
+            // Generate prompt patterns
+            const promptsOutput = generatePromptPatterns();
+            document.getElementById('promptsTab').textContent = promptsOutput;
+            
+            // Raw JSON
+            const jsonOutput = JSON.stringify({
+                components: Object.fromEntries(knowledgeBase.components),
+                connections: Object.fromEntries(knowledgeBase.connections),
+                patterns: knowledgeBase.patterns
+            }, null, 2);
+            document.getElementById('jsonTab').textContent = jsonOutput;
+        }
+        
+        function generateReferenceWorkflows() {
+            let output = `# Generated from ${knowledgeBase.workflows.length} working workflows\n`;
+            output += `# Add this to reference_workflows.py\n\n`;
+            output += `LEARNED_WORKFLOWS = {\n`;
+            
+            knowledgeBase.patterns.forEach((pattern, idx) => {
+                output += `    "${pattern.name}": {\n`;
+                output += `        "structure": "${pattern.structure}",\n`;
+                output += `        "components": ${JSON.stringify(pattern.components)},\n`;
+                output += `        "connections": [\n`;
+                pattern.connections.forEach(conn => {
+                    output += `            {"source": "${conn.source}", "source_output": "${conn.sourceOutput}", "target": "${conn.target}", "target_input": "${conn.targetInput}"},\n`;
+                });
+                output += `        ],\n`;
+                output += `    },\n`;
+            });
+            
+            output += `}\n`;
+            return output;
+        }
+        
+        function generateComponentMetadata() {
+            let output = `# Component Metadata from working workflows\n`;
+            output += `# Use this to update COMPONENT_FIELD_CORRECTIONS and connection logic\n\n`;
+            
+            output += `COMPONENT_OUTPUTS = {\n`;
+            knowledgeBase.components.forEach((data, compType) => {
+                if (data.outputs.length > 0) {
+                    output += `    "${compType}": {\n`;
+                    output += `        "display_name": "${data.displayName}",\n`;
+                    output += `        "outputs": [\n`;
+                    data.outputs.forEach(out => {
+                        output += `            {"name": "${out.name}", "types": ${JSON.stringify(out.types)}},\n`;
+                    });
+                    output += `        ],\n`;
+                    output += `    },\n`;
+                }
+            });
+            output += `}\n\n`;
+            
+            output += `COMPONENT_INPUTS = {\n`;
+            knowledgeBase.components.forEach((data, compType) => {
+                if (data.inputs.length > 0) {
+                    output += `    "${compType}": {\n`;
+                    data.inputs.forEach(inp => {
+                        output += `        "${inp.name}": {"type": "${inp.type}", "input_types": ${JSON.stringify(inp.inputTypes)}, "required": ${inp.required}},\n`;
+                    });
+                    output += `    },\n`;
+                }
+            });
+            output += `}\n`;
+            
+            return output;
+        }
+        
+        function generatePromptPatterns() {
+            let output = `## Connection Patterns (for prompts.py)\n\n`;
+            output += `Add these verified patterns to GENERATE_JSON_PROMPT:\n\n`;
+            
+            // Group connections by source component
+            const bySource = new Map();
+            knowledgeBase.connections.forEach((count, pattern) => {
+                const [source] = pattern.split(' → ');
+                const sourceComp = source.split('.')[0];
+                if (!bySource.has(sourceComp)) {
+                    bySource.set(sourceComp, []);
+                }
+                bySource.get(sourceComp).push({ pattern, count });
+            });
+            
+            output += `### Verified Connection Rules:\n\`\`\`\n`;
+            bySource.forEach((patterns, source) => {
+                output += `\n# ${source} connections:\n`;
+                patterns.sort((a, b) => b.count - a.count).forEach(p => {
+                    output += `- ${p.pattern} (verified ${p.count}x)\n`;
+                });
+            });
+            output += `\`\`\`\n\n`;
+            
+            // Generate component connection dict
+            output += `### For _build_dynamic_component_connections():\n\`\`\`python\n`;
+            output += `VERIFIED_COMPONENT_CONNECTIONS = {\n`;
+            
+            // Find components that output to Prompt Template
+            knowledgeBase.connections.forEach((count, pattern) => {
+                if (pattern.includes('Prompt Template')) {
+                    const match = pattern.match(/^(\w+)\.(\w+) → Prompt Template\.(\w+)$/);
+                    if (match) {
+                        const [, compType, outputName, targetVar] = match;
+                        output += `    "${compType}": ("${outputName}", "${targetVar}"),  # verified ${count}x\n`;
+                    }
+                }
+            });
+            
+            output += `}\n\`\`\`\n`;
+            
+            return output;
+        }
+        
+        function showTab(tabName) {
+            currentTab = tabName;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.code-output').forEach(el => el.style.display = 'none');
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').style.display = 'block';
+        }
+        
+        function copyOutput() {
+            const content = document.getElementById(currentTab + 'Tab').textContent;
+            navigator.clipboard.writeText(content).then(() => {
+                alert('Copied to clipboard!');
+            });
+        }
+        
+        function clearAll() {
+            if (confirm('Clear all loaded workflows?')) {
+                knowledgeBase.workflows = [];
+                knowledgeBase.components.clear();
+                knowledgeBase.connections.clear();
+                knowledgeBase.fieldMappings.clear();
+                knowledgeBase.patterns = [];
+                
+                document.getElementById('stats').style.display = 'none';
+                document.getElementById('panels').style.display = 'none';
+                document.getElementById('outputSection').style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
